@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 export class LoadingScreen {
   private element = document.querySelector<HTMLElement>('#loading-screen');
   private caption = this.element?.querySelector<HTMLElement>('.loading-caption');
@@ -30,7 +31,7 @@ export class LoadingScreen {
     const element = this.element;
     if (!element?.isConnected) { onReady(); return; }
     window.setTimeout(() => {
-      this.stage('Всё готово!', 100); this.paint(100);
+      this.stage(t('Всё готово!'), 100); this.paint(100);
       window.setTimeout(() => {
         element.classList.add('is-complete'); onReady();
         window.setTimeout(() => element.remove(), 220);

@@ -50,7 +50,9 @@ export function validProfile(v: unknown): v is Profile {
   if (!(v.completed as string[]).every(id => typeof (v.levelRewards as Record<string, unknown>)[id] === 'string')) return false;
   if (!Object.entries(v.best).every(([id, r]) => (v.completed as string[]).includes(id) && record(r) && integer(r.stars, 1, 3) && integer(r.hints) && integer(r.timeMs))) return false;
   if (!(v.completed as string[]).every(id => record((v.best as Record<string, unknown>)[id]))) return false;
-  if (!record(v.settings) || (v.settings.music !== undefined && typeof v.settings.music !== 'boolean') || typeof v.settings.sound !== 'boolean' || typeof v.settings.reducedMotion !== 'boolean') return false;
+  if (!record(v.settings) || (v.settings.music !== undefined && typeof v.settings.music !== 'boolean') ||
+    (v.settings.language !== undefined && !['auto', 'ru', 'en'].includes(v.settings.language as string)) ||
+    typeof v.settings.sound !== 'boolean' || typeof v.settings.reducedMotion !== 'boolean') return false;
   if (v.attempt === null) return true;
   if (!validAttempt(v.attempt)) return false;
   const generated = generatedInfo(v.attempt.levelId);

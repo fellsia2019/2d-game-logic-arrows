@@ -10,5 +10,6 @@ for (const file of files) {
   if (/\.(js|css|html)$/.test(file) && /debug-panel|data-debug|data-gallery|victory-gallery/.test(readFileSync(file, 'utf8'))) throw Error('Test UI leaked into release');
 }
 const bytes = files.reduce((sum, file) => sum + statSync(file).size, 0);
-if (bytes > 100 * 1024 * 1024) throw Error('Archive exceeds platform limit');
+// Yandex specifies 100 MB before ZIP compression; use decimal MB conservatively.
+if (bytes > 100_000_000) throw Error('Archive exceeds platform limit');
 console.log(`Yandex slice: ${files.length} files, ${bytes} bytes; no development inspector.`);

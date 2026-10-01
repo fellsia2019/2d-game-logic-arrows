@@ -7,6 +7,7 @@ export interface Level {
   tutorial?: string; teaching?: boolean; solutionWitness: string[];
 }
 export type Phase = 'playing' | 'deadlock' | 'won' | 'lost';
+export type LanguageSetting = 'auto' | 'ru' | 'en';
 export interface Attempt {
   id: string; levelId: string; levelRevision: number;
   arrows: Arrow[]; history: Arrow[][]; phase: Phase; stateRevision: number;
@@ -29,6 +30,6 @@ export interface Profile {
   introSeen?: boolean;
   lastFactReward?: FactReward;
   campaignSeed?: number;
-  settings: { music?: boolean; sound: boolean; reducedMotion: boolean };
+  settings: { music?: boolean; sound: boolean; reducedMotion: boolean; language?: LanguageSetting };
 }
 export const copyArrows = (arrows: Arrow[]): Arrow[] => arrows.map(a => ({ ...a }));

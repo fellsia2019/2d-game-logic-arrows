@@ -3,7 +3,7 @@ import { continueAttempt } from './rules';
 export function freshProfile(): Profile {
   return { version: 1, revision: 0, completed: [], best: {}, levelRewards: {}, unlocked: [], favorites: [],
     topics: [...TOPICS], rewardCursor: 0, introSeen: false, hints: 5, attempt: null, receipts: [],
-    settings: { music: true, sound: true, reducedMotion: false } };
+    settings: { music: true, sound: true, reducedMotion: false, language: 'auto' } };
 }
 export function toggleTopic(profile: Profile, topic: Topic): Profile {
   if (profile.topics.includes(topic)) return profile.topics.length === 1 ? profile : { ...profile, topics: profile.topics.filter(t => t !== topic) };

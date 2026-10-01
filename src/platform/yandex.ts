@@ -1,3 +1,4 @@
+import { portalLocale, setAutomaticLocale } from '../i18n';
 export interface Sdk {
   environment: { i18n: { lang: string } };
   features: { LoadingAPI?: { ready(): void }; GameplayAPI?: { start(): void; stop(): void } };
@@ -37,7 +38,7 @@ export class YandexAdapter {
     try {
       this.sdk = await Promise.race([this.provider(), new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error('SDK initialization timeout')), 10000);
-      })]); this.language = this.sdk.environment.i18n.lang;
+      })]); this.language = this.sdk.environment.i18n.lang; setAutomaticLocale(portalLocale(this.language));
       this.sdk.on('game_api_pause', () => this.pause(true, 'platform'));
       this.sdk.on('game_api_resume', () => this.pause(false, 'platform'));
       this.sync(); return true;

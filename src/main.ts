@@ -1,3 +1,4 @@
+import { t, initializeLocalLocale, setLanguagePreference } from './i18n';
 import './style.css';
 import { facts } from './data/facts';
 import { levelById } from './data/levels';
@@ -17,15 +18,18 @@ import { interstitialDue } from './platform/ad-policy';
 import { toggleFactExplanation } from './ui/accordion';
 import { clearDepartures, playDeparture } from './ui/departures';
 
+initializeLocalLocale();
+
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const loader = new LoadingScreen();
-loader.stage('Готовим головоломки…', 35);
 let booting = true;
 let debugPanel: { refresh(): void } | null = null;
 let storage: Storage | null = null;
 try { storage = window.localStorage; } catch { /* private mode */ }
 const saves = new ProfileStorage(storage);
 let profile = saves.load();
+setLanguagePreference(profile.settings.language ?? 'auto');
+loader.stage(t('Готовим головоломки…'), 35);
 const campaignStart = initializeCampaign(profile);
 const campaign = new Campaign(campaignStart.seed);
 if (!profile.attempt) profile.attempt = newAttempt(campaign.get(campaignStart.order));
@@ -69,8 +73,8 @@ function protectChangedSave(): void {
   if (saves.status !== 'cleared' && saves.status !== 'conflict') return;
   otherTab = true;
   storageNotice = saves.status === 'cleared'
-    ? 'Сохранение удалено. Обнови страницу, чтобы начать с первого уровня.'
-    : 'Прогресс изменён в другой вкладке. Обнови страницу, чтобы загрузить актуальное сохранение.';
+    ? t('Сохранение удалено. Обнови страницу, чтобы начать с первого уровня.')
+    : t('Прогресс изменён в другой вкладке. Обнови страницу, чтобы загрузить актуальное сохранение.');
   cancelAnimationFrame(introFrame); intro = null; cancelHint();
   hint = null; error = null; obstacle = null; busy = false; modal = null; resultPending = false; clearDepartures();
   activity(); draw();
@@ -86,10 +90,10 @@ function commit(next = profile): void {
 }
 function saveLabel(): string {
   if (storageNotice) return storageNotice;
-  if (otherTab) return 'В другой вкладке появился новый прогресс';
-  return { saved: 'Прогресс сохранён на устройстве', memory: 'Прогресс сейчас не сохраняется',
-    recovered: 'Восстановлено резервное сохранение', future: 'Сохранение другой версии защищено',
-    cleared: 'Сохранение удалено', conflict: 'Прогресс изменён в другой вкладке' }[saves.status];
+  if (otherTab) return t('В другой вкладке появился новый прогресс');
+  return { saved: t('Прогресс сохранён на устройстве'), memory: t('Прогресс сейчас не сохраняется'),
+    recovered: t('Восстановлено резервное сохранение'), future: t('Сохранение другой версии защищено'),
+    cleared: t('Сохранение удалено'), conflict: t('Прогресс изменён в другой вкладке') }[saves.status];
 }
 function focusKey(): string | null {
   const el = document.activeElement as HTMLElement | null;
@@ -198,7 +202,7 @@ function performMove(id: string, demonstration = false): void {
   activity();
   if (result.kind === 'blocked') {
     error = id; errorStartedAt = performance.now(); obstacle = result.blocker ?? null;
-    status = 'Путь перекрыт. Сначала убери стрелку перед ней.';
+    status = t('Путь перекрыт. Сначала убери стрелку перед ней.');
     sound.play('error'); draw();
     setTimeout(() => {
       if (errorVersion !== feedbackVersion || profile.attempt?.id !== before.id || otherTab) return;
@@ -238,19 +242,19 @@ function performUndo(): void {
   if (!level().links.length || busy || adRequest || hintBusy || otherTab || pauseReasons.has('platform')) return;
   recordTime(); const next = undo(level(), profile.attempt!);
   if (next === profile.attempt) return;
-  profile.attempt = next; hint = null; error = null; obstacle = null; errorVersion++; modal = null; resultPending = false; clearDepartures(); status = 'Ход возвращён. Попробуй другой порядок.';
+  profile.attempt = next; hint = null; error = null; obstacle = null; errorVersion++; modal = null; resultPending = false; clearDepartures(); status = t('Ход возвращён. Попробуй другой порядок.');
   commit(); sound.play('undo'); activity(); draw();
 }
-const recoveryAdvice = () => level().links.length ? 'Можно отменить ход или начать заново.' : 'Можно начать уровень заново.';
+const recoveryAdvice = () => level().links.length ? t('Можно отменить ход или начать заново.') : t('Можно начать уровень заново.');
 function requestHint(): void {
   if (!active() || hintBusy) return;
-  if (hint) { status = 'Подсвечена стрелка со свободным продолжением.'; draw(); return; }
+  if (hint) { status = t('Подсвечена стрелка со свободным продолжением.'); draw(); return; }
   if (!level().teaching && profile.hints === 0) { openModal('hint-offer'); return; }
-  recordTime(); hintBusy = true; status = 'Ищем свободный маршрут…';
+  recordTime(); hintBusy = true; status = t('Ищем свободный маршрут…');
   const id = ++requestId;
   const timer = window.setTimeout(() => {
     if (pendingHint?.id !== id) return;
-    cancelHint(); status = `Не удалось подобрать подсказку. ${recoveryAdvice()}`; draw();
+    cancelHint(); status = `${t("Не удалось подобрать подсказку.")} ${recoveryAdvice()}`; draw();
   }, 2000);
   pendingHint = { id, attemptId: profile.attempt!.id, revision: profile.attempt!.stateRevision, timer };
   worker.postMessage({ requestId: id, level: level(), arrows: profile.attempt!.arrows }); draw();
@@ -261,17 +265,17 @@ worker.onmessage = (event: MessageEvent<{ requestId: number; solution: Solution 
   cancelHint();
   if (profile.attempt!.id !== pending.attemptId || profile.attempt!.stateRevision !== pending.revision || !active()) { draw(); return; }
   const solution = event.data.solution;
-  if (solution.status === 'unsolvable') { status = level().links.length ? 'Этот порядок закрыл решение. Отмени один или несколько ходов.' : 'Не удалось найти решение. Можно начать уровень заново.'; draw(); return; }
-  if (solution.status !== 'solved' || !solution.path.length) { status = `Не удалось подобрать подсказку. ${recoveryAdvice()}`; draw(); return; }
+  if (solution.status === 'unsolvable') { status = level().links.length ? t('Этот порядок закрыл решение. Отмени один или несколько ходов.') : t('Не удалось найти решение. Можно начать уровень заново.'); draw(); return; }
+  if (solution.status !== 'solved' || !solution.path.length) { status = `${t("Не удалось подобрать подсказку.")} ${recoveryAdvice()}`; draw(); return; }
   if (!level().teaching && profile.hints === 0) { openModal('hint-offer'); return; }
   hint = solution.path[0]; hintStartedAt = performance.now();
   const version = ++hintVersion;
   if (!level().teaching) { profile.hints--; profile.attempt!.hintsUsed++; commit(); }
-  status = 'Подсвечен ход, после которого поле можно очистить.'; sound.play('hint'); draw();
+  status = t('Подсвечен ход, после которого поле можно очистить.'); sound.play('hint'); draw();
   const hinted = hint;
   setTimeout(() => { if (hint === hinted && hintVersion === version) { hint = null; draw(); } }, FEEDBACK_DURATION_MS);
 };
-worker.onerror = () => { cancelHint(); status = `Подсказка временно недоступна. ${recoveryAdvice()}`; draw(); };
+worker.onerror = () => { cancelHint(); status = `${t("Подсказка временно недоступна.")} ${recoveryAdvice()}`; draw(); };
 async function rewarded(placement: 'hint' | 'continue'): Promise<void> {
   if (!sdk.available || busy || adRequest || otherTab || pauseReasons.paused || performance.now() < nextAdAt) return;
   if (placement === 'continue' && (profile.attempt!.phase !== 'lost' || profile.attempt!.continued)) return;
@@ -283,7 +287,7 @@ async function rewarded(placement: 'hint' | 'continue'): Promise<void> {
     lastInterstitialAt = activeSessionMs;
   });
   adRequest = false; nextAdAt = performance.now() + 5000;
-  status = granted ? placement === 'hint' ? 'Добавлена одна подсказка.' : 'Ещё одна ошибка доступна. Продолжай с этого поля.' : 'Реклама не завершена или недоступна. Поле сохранено.';
+  status = granted ? placement === 'hint' ? t('Добавлена одна подсказка.') : t('Ещё одна ошибка доступна. Продолжай с этого поля.') : t('Реклама не завершена или недоступна. Поле сохранено.');
   draw();
 }
 async function nextLevel(): Promise<void> {
@@ -292,7 +296,7 @@ async function nextLevel(): Promise<void> {
   adRequest = true;
   if (interstitialDue({ available: sdk.available, victories: victoriesSinceAd, activeMs: activeSessionMs,
     lastInterstitialAt, lastAdAttemptAt, nextTeaching: !!next.teaching })) {
-    lastAdAttemptAt = activeSessionMs; status = 'Реклама перед следующим уровнем'; commit(); draw();
+    lastAdAttemptAt = activeSessionMs; status = t('Реклама перед следующим уровнем'); commit(); draw();
     const shown = await sdk.interstitial();
     if (shown) { lastInterstitialAt = activeSessionMs; victoriesSinceAd = 0; }
   }
@@ -319,7 +323,7 @@ app.addEventListener('click', event => {
   }
   if (target.dataset.topic) {
     const next = toggleTopic(profile, target.dataset.topic as Topic);
-    if (next === profile) { status = 'Оставь хотя бы одну тему.'; target.animate([{ transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' }, { transform: 'translateX(0)' }], { duration: 180 }); return; }
+    if (next === profile) { status = t('Оставь хотя бы одну тему.'); target.animate([{ transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' }, { transform: 'translateX(0)' }], { duration: 180 }); return; }
     profile = next; commit();
     if (otherTab) return;
     const selected = profile.topics.includes(target.dataset.topic as Topic);
@@ -342,14 +346,22 @@ app.addEventListener('click', event => {
     case 'motion': profile.settings.reducedMotion = !profile.settings.reducedMotion; commit(); draw(); break;
     case 'ad-hint':
       if (modal !== 'hint-offer' || !sdk.available) break;
-      if (performance.now() < nextAdAt) { closeModal(); status = 'Реклама будет доступна через несколько секунд. Нажми «Подсказка» ещё раз.'; draw(); break; }
+      if (performance.now() < nextAdAt) { closeModal(); status = t('Реклама будет доступна через несколько секунд. Нажми «Подсказка» ещё раз.'); draw(); break; }
       closeModal(); void rewarded('hint'); break;
     case 'ad-continue': void rewarded('continue'); break;
   }
 });
 app.addEventListener('input', event => { if ((event.target as HTMLElement).id === 'fact-search') { query = (event.target as HTMLInputElement).value; draw(); } });
 app.addEventListener('change', event => {
-  if ((event.target as HTMLElement).id === 'collection-topic') {
+  const target = event.target as HTMLSelectElement;
+  if (target.id === 'language-choice') {
+    const next = target.value;
+    if (!['auto', 'ru', 'en'].includes(next) || !verifySave()) return;
+    profile.settings.language = next as 'auto' | 'ru' | 'en'; commit();
+    if (otherTab) return;
+    setLanguagePreference(profile.settings.language); query = ''; draw();
+  }
+  if (target.id === 'collection-topic') {
     const value = (event.target as HTMLSelectElement).value;
     collectionTopic = TOPICS.some(t => t === value) ? value as Topic : 'all'; draw();
   }
@@ -380,7 +392,7 @@ window.addEventListener('storage', event => {
   if (event.storageArea === storage && (event.key === SAVE_KEY || event.key === null)) verifySave();
 });
 setInterval(recordTime, 1000);
-loader.stage(import.meta.env.MODE === 'yandex' ? 'Подключаем игровую платформу…' : 'Готовим игру…', 70);
+loader.stage(import.meta.env.MODE === 'yandex' ? t('Подключаем игровую платформу…') : t('Готовим игру…'), 70);
 void Promise.all([sdk.initialize(), campaign.prepare(campaignStart.order)]).then(() => loader.finish(() => {
   booting = false; draw(); sdk.markReady();
   if (import.meta.env.MODE !== 'yandex') {

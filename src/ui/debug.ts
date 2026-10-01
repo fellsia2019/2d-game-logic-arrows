@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { Level } from '../core/types';
 import { icon } from './icons';
 import { currentTheme, toggleTheme } from './theme';
@@ -11,7 +12,7 @@ interface DebugActions {
 export function mountDebugPanel(actions: DebugActions): { refresh(): void } {
   const root = document.createElement('details');
   root.className = 'debug-panel'; root.id = 'debug-panel';
-  root.innerHTML = `<summary>${icon('settings')}<span>Дебаг</span></summary><div class="debug-content"><strong>Проверка игры</strong><p>Тестовые действия сохраняются.</p><label>Уровень<select aria-label="Тестовый уровень"></select></label><button data-debug="start">${icon('next')}Открыть уровень</button><button data-debug="victory">${icon('check')}Победа</button><button data-debug="hint">${icon('hint')}Добавить подсказку</button><button data-debug="theme">${icon('art')}<span></span></button><a href="./victory-gallery.html" target="_blank" rel="noopener">${icon('book')}Все карточки победы</a><div class="debug-stock" role="status"></div></div>`;
+  root.innerHTML = `<summary>${icon('settings')}<span>${t("Дебаг")}</span></summary><div class="debug-content"><strong>${t("Проверка игры")}</strong><p>${t("Тестовые действия сохраняются.")}</p><label>${t("Уровень")}<select aria-label="${t("Тестовый уровень")}"></select></label><button data-debug="start">${icon('next')}${t("Открыть уровень")}</button><button data-debug="victory">${icon('check')}${t("Победа")}</button><button data-debug="hint">${icon('hint')}${t("Добавить подсказку")}</button><button data-debug="theme">${icon('art')}<span></span></button><a href="./victory-gallery.html" target="_blank" rel="noopener">${icon('book')}${t("Все карточки победы")}</a><div class="debug-stock" role="status"></div></div>`;
   const select = root.querySelector<HTMLSelectElement>('select')!;
   let catalogue = '';
   const refresh = () => {
@@ -19,12 +20,12 @@ export function mountDebugPanel(actions: DebugActions): { refresh(): void } {
     const levels = actions.levels(), signature = levels.map(l => l.id).join('|');
     if (signature !== catalogue) {
       const selected = select.value; catalogue = signature;
-      select.innerHTML = levels.map(l => `<option value="${l.id}">${l.order} · ${l.title}</option>`).join('');
+      select.innerHTML = levels.map(l => `<option value="${l.id}">${l.order} · ${t(l.title)}</option>`).join('');
       select.value = selected;
     }
     if (document.activeElement !== select) select.value = state.levelId;
-    root.querySelector('.debug-stock')!.textContent = `Подсказки: ${state.hints}`;
-    root.querySelector('[data-debug="theme"] span')!.textContent = `Тема: ${currentTheme() === 'dark' ? 'тёмная' : 'светлая'}`;
+    root.querySelector('.debug-stock')!.textContent = `${t("Подсказки:")} ${state.hints}`;
+    root.querySelector('[data-debug="theme"] span')!.textContent = `${t("Тема:")} ${currentTheme() === 'dark' ? t('тёмная') : t('светлая')}`;
     root.querySelectorAll<HTMLButtonElement>('button[data-debug]').forEach(b => { b.disabled = state.locked; });
     // A native modal makes the rest of the document inert. Mount inside it so
     // the panel remains usable on menus and victory screens too.
