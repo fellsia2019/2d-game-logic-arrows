@@ -245,6 +245,7 @@ const recoveryAdvice = () => level().links.length ? 'Можно отменить
 function requestHint(): void {
   if (!active() || hintBusy) return;
   if (hint) { status = 'Подсвечена стрелка со свободным продолжением.'; draw(); return; }
+  if (!level().teaching && profile.hints === 0) { openModal('hint-offer'); return; }
   recordTime(); hintBusy = true; status = 'Ищем свободный маршрут…';
   const id = ++requestId;
   const timer = window.setTimeout(() => {
@@ -262,7 +263,7 @@ worker.onmessage = (event: MessageEvent<{ requestId: number; solution: Solution 
   const solution = event.data.solution;
   if (solution.status === 'unsolvable') { status = level().links.length ? 'Этот порядок закрыл решение. Отмени один или несколько ходов.' : 'Не удалось найти решение. Можно начать уровень заново.'; draw(); return; }
   if (solution.status !== 'solved' || !solution.path.length) { status = `Не удалось подобрать подсказку. ${recoveryAdvice()}`; draw(); return; }
-  if (!level().teaching && profile.hints === 0) { status = `Подсказки закончились. ${sdk.available ? 'Можно получить ещё одну за рекламу. ' : ''}${recoveryAdvice()}`; draw(); return; }
+  if (!level().teaching && profile.hints === 0) { openModal('hint-offer'); return; }
   hint = solution.path[0]; hintStartedAt = performance.now();
   const version = ++hintVersion;
   if (!level().teaching) { profile.hints--; profile.attempt!.hintsUsed++; commit(); }
@@ -339,7 +340,10 @@ app.addEventListener('click', event => {
     case 'music': profile.settings.music = profile.settings.music === false; commit(); draw(); break;
     case 'sound': profile.settings.sound = !profile.settings.sound; commit(); draw(); break;
     case 'motion': profile.settings.reducedMotion = !profile.settings.reducedMotion; commit(); draw(); break;
-    case 'ad-hint': void rewarded('hint'); break;
+    case 'ad-hint':
+      if (modal !== 'hint-offer' || !sdk.available) break;
+      if (performance.now() < nextAdAt) { closeModal(); status = 'Реклама будет доступна через несколько секунд. Нажми «Подсказка» ещё раз.'; draw(); break; }
+      closeModal(); void rewarded('hint'); break;
     case 'ad-continue': void rewarded('continue'); break;
   }
 });
