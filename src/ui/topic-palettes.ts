@@ -64,6 +64,30 @@ export const TOPIC_PALETTES = {
       buttonBorder: '#d890a4', buttonText: '#78334d', hover: '#f1bdc5',
     },
   },
+  history: {
+    dark: { surface: '#514432', edge: '#34384d', line: '#a89368', accent: '#f7db9e',
+      badge: '#615036', button: '#6e5734', buttonBorder: '#d8b56f', buttonText: '#fff6df', hover: '#856a42' },
+    light: { surface: '#fff6df', edge: '#f3f0ec', line: '#cbbb92', accent: '#79591d',
+      badge: '#f3e7c7', button: '#efe0b7', buttonBorder: '#b99b5c', buttonText: '#624513', hover: '#e3ce94' },
+  },
+  geography: {
+    dark: { surface: '#284b50', edge: '#29384c', line: '#669fa4', accent: '#9fe5e4',
+      badge: '#2c555b', button: '#2b6166', buttonBorder: '#70bdc5', buttonText: '#eaffff', hover: '#36777c' },
+    light: { surface: '#e6f7f8', edge: '#edf1f7', line: '#97c7cb', accent: '#1b626b',
+      badge: '#d2ecee', button: '#c1e4e8', buttonBorder: '#74acb3', buttonText: '#204f58', hover: '#a8d6dd' },
+  },
+  science: {
+    dark: { surface: '#4e3557', edge: '#33334f', line: '#a77db5', accent: '#f1c3ff',
+      badge: '#623e70', button: '#714583', buttonBorder: '#ca91dd', buttonText: '#fff2ff', hover: '#87569a' },
+    light: { surface: '#fbecff', edge: '#f0eef9', line: '#d3adde', accent: '#7d398e',
+      badge: '#efd8f5', button: '#e9cef2', buttonBorder: '#b581c7', buttonText: '#662d78', hover: '#dab5e8' },
+  },
+  human: {
+    dark: { surface: '#514039', edge: '#36354c', line: '#b88e77', accent: '#ffd0aa',
+      badge: '#654b3c', button: '#78563e', buttonBorder: '#e1aa79', buttonText: '#fff3e4', hover: '#89644b' },
+    light: { surface: '#fff1e3', edge: '#f6eff0', line: '#dab99b', accent: '#8b501f',
+      badge: '#f5e0ca', button: '#f2d5b7', buttonBorder: '#c6996c', buttonText: '#744019', hover: '#e7c299' },
+  },
 } as const satisfies Record<Topic, Record<Theme, TopicPalette>>;
 
 // Both variants are emitted so CSS can follow device theme changes immediately,

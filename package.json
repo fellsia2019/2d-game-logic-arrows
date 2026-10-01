@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 5173",
+    "dev": "vite --host 127.0.0.1 --port 5174 --strictPort",
     "build": "tsc --noEmit && vite build",
     "build:yandex": "tsc --noEmit && vite build --mode yandex && node scripts/check-build.mjs",
-    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "preview": "vite preview --host 127.0.0.1 --port 4174 --strictPort",
     "test": "vitest run",
     "check": "npm run test && npm run build:yandex",
     "package:yandex": "npm run build:yandex && powershell -NoProfile -File scripts/package-yandex.ps1"

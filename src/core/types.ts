@@ -13,19 +13,22 @@ export interface Attempt {
   mistakesUsed: number; totalMistakes: number; hintsUsed: number;
   undosUsed: number; activeMs: number; continued: boolean;
 }
-export const TOPICS = ['space', 'nature', 'technology', 'art'] as const;
+export const TOPICS = ['space', 'nature', 'technology', 'art', 'history', 'geography', 'science', 'human'] as const;
 export type Topic = typeof TOPICS[number];
 export interface Fact {
   id: string; topic: Topic; title: string; text: string; detail: string;
   source: string; sourceUrl: string; verifiedAt: string;
 }
 export interface Result { stars: number; hints: number; timeMs: number }
+export interface FactReward { attemptId: string; levelId: string; factId: string; isNew: boolean }
 export interface Profile {
   version: 1; revision: number; completed: string[];
   best: Record<string, Result>; levelRewards: Record<string, string>;
   unlocked: string[]; favorites: string[]; topics: Topic[]; rewardCursor: number;
   hints: number; attempt: Attempt | null; receipts: string[];
   introSeen?: boolean;
+  lastFactReward?: FactReward;
+  campaignSeed?: number;
   settings: { music?: boolean; sound: boolean; reducedMotion: boolean };
 }
 export const copyArrows = (arrows: Arrow[]): Arrow[] => arrows.map(a => ({ ...a }));

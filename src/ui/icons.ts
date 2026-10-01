@@ -18,6 +18,10 @@ const paths: Record<string, string> = {
   nature: '<path d="M20 3c-8-1-16 2-16 9a7 7 0 0 0 7 7c7 0 10-8 9-16zM4 21 16 9m-6 6V9m0 6h6"/>',
   technology: '<rect x="6" y="6" width="12" height="12" rx="3"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3"/>',
   art: '<path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.7-3.1c-.7-1 .1-2.4 1.3-2.4h2a3 3 0 0 0 3-3C21 7 17 3 12 3z"/><circle cx="7.5" cy="10" r="1" fill="currentColor"/><circle cx="11" cy="7" r="1" fill="currentColor"/><circle cx="15.5" cy="8" r="1" fill="currentColor"/>',
+  history: '<path d="M7 3h11a3 3 0 0 1 3 3v2h-4V6a3 3 0 0 0-6 0v12a3 3 0 0 1-6 0v-2h11v2a3 3 0 0 0 3 3H8M7 3a3 3 0 0 0-3 3v2h7M14 10h4m-4 3h4"/>',
+  geography: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 7h14M5 17h14"/>',
+  science: '<path d="M9 3h6m-5 0v6l-6 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-6-9V3M7 14h10"/><circle cx="10" cy="17" r=".8" fill="currentColor"/><circle cx="14" cy="18" r=".8" fill="currentColor"/>',
+  human: '<path d="M8 21v-4a8 8 0 1 1 10-7l2 3h-3v4h-4v4M8 8a2 2 0 0 1 3-1 2 2 0 0 1 3 1c0 2-3 4-3 4S8 10 8 8z"/>',
   video: '<rect x="3" y="5" width="18" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/>',
   settings: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--panel)"/><circle cx="15" cy="17" r="3" fill="var(--panel)"/>',
 };

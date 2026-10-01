@@ -1,7 +1,8 @@
 import { freshProfile } from '../core/profile';
 import { fieldPhase } from '../core/rules';
 import { TOPICS, type Arrow, type Attempt, type Profile } from '../core/types';
-import { levels } from '../data/levels';
+import { levelById, isLevelId } from '../data/levels';
+import { generatedInfo } from '../data/generated-levels';
 import { facts } from '../data/facts';
 export interface StorageLike { getItem(key: string): string | null; setItem(key: string, value: string): void; removeItem(key: string): void }
 export const SAVE_KEY = 'osvobodi-pole-profile-v1';
@@ -10,7 +11,7 @@ const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v ===
 const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(x => typeof x === 'string') && new Set(v).size === v.length;
 const integer = (v: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): v is number => Number.isSafeInteger(v) && (v as number) >= min && (v as number) <= max;
 function validArrows(value: unknown, levelId: string): value is Arrow[] {
-  const level = levels.find(l => l.id === levelId);
+  const level = isLevelId(levelId) ? levelById(levelId) : null;
   if (!level || !Array.isArray(value) || value.length > level.arrows.length) return false;
   const seen = new Set<string>();
   return value.every(a => {
@@ -21,7 +22,7 @@ function validArrows(value: unknown, levelId: string): value is Arrow[] {
 }
 export function validAttempt(v: unknown): v is Attempt {
   if (!record(v) || typeof v.id !== 'string' || !v.id || typeof v.levelId !== 'string') return false;
-  const level = levels.find(l => l.id === v.levelId);
+  const level = isLevelId(v.levelId) ? levelById(v.levelId) : null;
   if (!level || v.levelRevision !== level.revision || !validArrows(v.arrows, level.id)) return false;
   if (!Array.isArray(v.history) || v.history.length > level.arrows.length || !v.history.every(s => validArrows(s, level.id))) return false;
   if (!['stateRevision', 'totalMistakes', 'hintsUsed', 'undosUsed', 'activeMs'].every(k => integer(v[k]))) return false;
@@ -32,8 +33,15 @@ export function validAttempt(v: unknown): v is Attempt {
 export function validProfile(v: unknown): v is Profile {
   if (!record(v) || v.version !== 1 || !integer(v.revision) || !integer(v.hints, 0, 10000) || !integer(v.rewardCursor)) return false;
   if (v.introSeen !== undefined && typeof v.introSeen !== 'boolean') return false;
-  if (!strings(v.completed) || !v.completed.every(id => levels.some(l => l.id === id))) return false;
+  if (v.campaignSeed !== undefined && !integer(v.campaignSeed, 0, 0xffffffff)) return false;
+  if (!strings(v.completed) || !v.completed.every(isLevelId)) return false;
   if (!strings(v.unlocked) || !v.unlocked.every(id => facts.some(f => f.id === id))) return false;
+  if (v.lastFactReward !== undefined && (!record(v.lastFactReward) ||
+    typeof v.lastFactReward.attemptId !== 'string' || !v.lastFactReward.attemptId ||
+    typeof v.lastFactReward.levelId !== 'string' || !(v.completed as string[]).includes(v.lastFactReward.levelId) ||
+    typeof v.lastFactReward.factId !== 'string' || !v.unlocked.includes(v.lastFactReward.factId) ||
+    typeof v.lastFactReward.isNew !== 'boolean' || !record(v.levelRewards) ||
+    v.levelRewards[v.lastFactReward.levelId] !== v.lastFactReward.factId)) return false;
   if (!strings(v.favorites) || !v.favorites.every(id => (v.unlocked as string[]).includes(id))) return false;
   if (!strings(v.topics) || !v.topics.length || !v.topics.every(t => TOPICS.some(topic => topic === t))) return false;
   if (!strings(v.receipts) || v.receipts.length > 128 || !record(v.best) || !record(v.levelRewards)) return false;
@@ -43,10 +51,23 @@ export function validProfile(v: unknown): v is Profile {
   if (!Object.entries(v.best).every(([id, r]) => (v.completed as string[]).includes(id) && record(r) && integer(r.stars, 1, 3) && integer(r.hints) && integer(r.timeMs))) return false;
   if (!(v.completed as string[]).every(id => record((v.best as Record<string, unknown>)[id]))) return false;
   if (!record(v.settings) || (v.settings.music !== undefined && typeof v.settings.music !== 'boolean') || typeof v.settings.sound !== 'boolean' || typeof v.settings.reducedMotion !== 'boolean') return false;
-  return v.attempt === null || validAttempt(v.attempt);
+  if (v.attempt === null) return true;
+  if (!validAttempt(v.attempt)) return false;
+  const generated = generatedInfo(v.attempt.levelId);
+  return !generated || generated.legacy || v.campaignSeed === undefined || generated.seed === v.campaignSeed;
 }
 export function decode(raw: string | null): Profile | null {
-  try { const v: unknown = JSON.parse(raw ?? 'null'); return validProfile(v) ? v : null; } catch { return null; }
+  try {
+    const v: unknown = JSON.parse(raw ?? 'null');
+    if (!validProfile(v)) return null;
+    // An already saved victory from the old catalogue must not roll another
+    // card merely because the player opens the updated game.
+    if (!v.lastFactReward && v.attempt?.phase === 'won' && v.levelRewards[v.attempt.levelId]) {
+      return { ...v, lastFactReward: { attemptId: v.attempt.id, levelId: v.attempt.levelId,
+        factId: v.levelRewards[v.attempt.levelId], isNew: false } };
+    }
+    return v;
+  } catch { return null; }
 }
 export class ProfileStorage {
   status: 'saved' | 'memory' | 'recovered' | 'future' | 'cleared' | 'conflict' = 'saved';

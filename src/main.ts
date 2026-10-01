@@ -1,6 +1,7 @@
 import './style.css';
 import { facts } from './data/facts';
-import { levels, levelById } from './data/levels';
+import { levelById } from './data/levels';
+import { Campaign, initializeCampaign } from './data/campaign';
 import { type Profile, type Topic, TOPICS } from './core/types';
 import { move, newAttempt, undo } from './core/rules';
 import { finish, grantReward, toggleTopic } from './core/profile';
@@ -25,7 +26,9 @@ let storage: Storage | null = null;
 try { storage = window.localStorage; } catch { /* private mode */ }
 const saves = new ProfileStorage(storage);
 let profile = saves.load();
-if (!profile.attempt) profile.attempt = newAttempt(levels.find(l => !profile.completed.includes(l.id)) ?? levels[0]);
+const campaignStart = initializeCampaign(profile);
+const campaign = new Campaign(campaignStart.seed);
+if (!profile.attempt) profile.attempt = newAttempt(campaign.get(campaignStart.order));
 if (profile.attempt.phase === 'won') profile = finish(profile, levelById(profile.attempt.levelId), facts);
 profile = saves.save(profile);
 document.body.classList.toggle('reduced-motion', profile.settings.reducedMotion);
@@ -133,6 +136,7 @@ function start(id: string, replayIntro = false): void {
   recordTime(); profile.attempt = newAttempt(levelById(id)); modal = null; busy = false; hint = null; resultPending = false; clearDepartures();
   error = null; obstacle = null; errorVersion++; status = ''; expandedFacts.clear();
   cancelHint(); commit(); activity(); draw(); maybeIntro(replayIntro);
+  void campaign.prepare(level().order).then(() => debugPanel?.refresh());
 }
 function maybeIntro(replay = false): void {
   if (intro || modal || busy || hintBusy || pauseReasons.paused || otherTab) return;
@@ -283,7 +287,7 @@ async function rewarded(placement: 'hint' | 'continue'): Promise<void> {
 }
 async function nextLevel(): Promise<void> {
   if (adRequest || busy || otherTab || profile.attempt!.phase !== 'won') return;
-  const next = levels[level().order]; if (!next) return;
+  const next = campaign.get(level().order + 1);
   adRequest = true;
   if (interstitialDue({ available: sdk.available, victories: victoriesSinceAd, activeMs: activeSessionMs,
     lastInterstitialAt, lastAdAttemptAt, nextTeaching: !!next.teaching })) {
@@ -331,7 +335,6 @@ app.addEventListener('click', event => {
     case 'hint': requestHint(); break;
     case 'how-play': if (level().order === 1) start(level().id, true); break;
     case 'next': void nextLevel(); break;
-    case 'replay-campaign': if (profile.attempt!.phase === 'won' && level().order === levels.length) start(levels[0].id); break;
     case 'favorites': favoritesOnly = !favoritesOnly; draw(); break;
     case 'music': profile.settings.music = profile.settings.music === false; commit(); draw(); break;
     case 'sound': profile.settings.sound = !profile.settings.sound; commit(); draw(); break;
@@ -374,11 +377,15 @@ window.addEventListener('storage', event => {
 });
 setInterval(recordTime, 1000);
 loader.stage(import.meta.env.MODE === 'yandex' ? 'Подключаем игровую платформу…' : 'Готовим игру…', 70);
-void sdk.initialize().then(() => loader.finish(() => {
+void Promise.all([sdk.initialize(), campaign.prepare(campaignStart.order)]).then(() => loader.finish(() => {
   booting = false; draw(); sdk.markReady();
   if (import.meta.env.MODE !== 'yandex') {
     void import('./ui/debug').then(({ mountDebugPanel }) => {
       debugPanel = mountDebugPanel({
+        levels: () => {
+          const prepared = campaign.available();
+          return prepared.some(l => l.id === level().id) ? prepared : [level(), ...prepared];
+        },
         state: () => ({ levelId: level().id, hints: profile.hints, locked: booting || otherTab || adRequest }),
         start: id => { if (verifySave()) { endIntro(false); start(id); } },
         addHint: () => { if (!verifySave()) return; profile.hints = Math.min(10000, profile.hints + 1); commit(); draw(); },

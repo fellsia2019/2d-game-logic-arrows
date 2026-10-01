@@ -115,6 +115,27 @@ describe('durable profiles', () => {
     p = finish(p, levels[0], facts); const memory = new Memory(); new ProfileStorage(memory).save(p);
     const restored = new ProfileStorage(memory).load(); expect(finish(restored, levels[0], facts).unlocked).toHaveLength(1);
   });
+  it('migrates an old saved victory without drawing a second fact', () => {
+    let p = freshProfile(); p.attempt = newAttempt(levels[0]);
+    for (const id of levels[0].solutionWitness) p.attempt = move(levels[0], p.attempt, id).attempt;
+    p = finish(p, levels[0], facts, () => 0);
+    const legacy = { ...p }; delete legacy.lastFactReward;
+    const restored = decode(JSON.stringify(legacy))!;
+    expect(restored.lastFactReward?.attemptId).toBe(p.attempt?.id);
+    const again = finish(restored, levels[0], facts, () => 0.999);
+    expect(again.unlocked).toEqual(p.unlocked); expect(again.levelRewards).toEqual(p.levelRewards);
+  });
+  it('preserves old collections and selected themes while allowing the new topics', () => {
+    const old = { ...freshProfile(), topics: ['space' as const], unlocked: ['venus-rotation'], favorites: ['venus-rotation'] };
+    expect(decode(JSON.stringify(old))).toEqual(old);
+    expect(validProfile({ ...old, topics: ['history', 'geography', 'science', 'human'] })).toBe(true);
+  });
+  it('rejects a last reward inconsistent with the saved collection or level result', () => {
+    const p = completedCampaign();
+    expect(validProfile({ ...p, lastFactReward: { ...p.lastFactReward, factId: 'missing' } })).toBe(false);
+    expect(validProfile({ ...p, lastFactReward: { ...p.lastFactReward, attemptId: '' } })).toBe(false);
+    expect(validProfile({ ...p, lastFactReward: { ...p.lastFactReward, isNew: 'yes' } })).toBe(false);
+  });
 });
 function mockSdk() {
   const callbacks = { rewarded: null as null | Parameters<Sdk['adv']['showRewardedVideo']>[0]['callbacks'],

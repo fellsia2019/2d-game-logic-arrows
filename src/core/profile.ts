@@ -9,7 +9,7 @@ export function toggleTopic(profile: Profile, topic: Topic): Profile {
   if (profile.topics.includes(topic)) return profile.topics.length === 1 ? profile : { ...profile, topics: profile.topics.filter(t => t !== topic) };
   return { ...profile, topics: TOPICS.filter(t => t === topic || profile.topics.includes(t)) };
 }
-export function finish(profile: Profile, level: Level, facts: Fact[]): Profile {
+export function finish(profile: Profile, level: Level, facts: Fact[], random: () => number = Math.random): Profile {
   const attempt = profile.attempt;
   if (!attempt || attempt.phase !== 'won' || attempt.levelId !== level.id) return profile;
   const result: Result = { stars: attempt.continued ? 1 : attempt.totalMistakes ? 1 : attempt.hintsUsed ? 2 : 3,
@@ -18,23 +18,18 @@ export function finish(profile: Profile, level: Level, facts: Fact[]): Profile {
   const better = !prior || result.stars > prior.stars || (result.stars === prior.stars &&
     (result.hints < prior.hints || (result.hints === prior.hints && result.timeMs < prior.timeMs)));
   const next = { ...profile, best: better ? { ...profile.best, [level.id]: result } : profile.best };
-  if (profile.completed.includes(level.id)) return next;
-  const topics = TOPICS.filter(t => profile.topics.includes(t));
-  let chosen: Fact | undefined, cursor = profile.rewardCursor;
-  for (let i = 0; i < topics.length; i++) {
-    const index = (profile.rewardCursor + i) % topics.length;
-    chosen = facts.find(f => f.topic === topics[index] && !profile.unlocked.includes(f.id));
-    if (chosen) { cursor = (index + 1) % topics.length; break; }
-  }
-  if (!chosen) {
-    const topic = topics[profile.rewardCursor % topics.length];
-    const eligible = facts.filter(f => f.topic === topic);
-    chosen = eligible[profile.completed.length % eligible.length];
-    cursor = (profile.rewardCursor + 1) % topics.length;
-  }
+  if (profile.lastFactReward?.attemptId === attempt.id) return next;
+  const eligible = facts.filter(f => profile.topics.includes(f.topic));
+  const unseen = eligible.filter(f => !profile.unlocked.includes(f.id));
+  const repeats = eligible.filter(f => f.id !== profile.lastFactReward?.factId);
+  const pool = unseen.length ? unseen : repeats.length ? repeats : eligible;
+  const chosen = pool[Math.floor(random() * pool.length)];
   if (!chosen) throw new Error('Topic has no facts');
-  return { ...next, completed: [...profile.completed, level.id], levelRewards: { ...profile.levelRewards, [level.id]: chosen.id },
-    unlocked: profile.unlocked.includes(chosen.id) ? profile.unlocked : [...profile.unlocked, chosen.id], rewardCursor: cursor };
+  const isNew = !profile.unlocked.includes(chosen.id);
+  return { ...next, completed: profile.completed.includes(level.id) ? profile.completed : [...profile.completed, level.id],
+    levelRewards: { ...profile.levelRewards, [level.id]: chosen.id },
+    unlocked: isNew ? [...profile.unlocked, chosen.id] : profile.unlocked,
+    lastFactReward: { attemptId: attempt.id, levelId: level.id, factId: chosen.id, isNew } };
 }
 export function grantReward(profile: Profile, receipt: string, placement: 'hint' | 'continue', attemptId: string): Profile {
   if (profile.receipts.includes(receipt)) return profile;

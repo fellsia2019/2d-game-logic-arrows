@@ -1,19 +1,27 @@
-import { levels } from '../data/levels';
+import type { Level } from '../core/types';
 import { icon } from './icons';
 import { currentTheme, toggleTheme } from './theme';
 import './debug.css';
 
 interface DebugActions {
+  levels(): Level[];
   state(): { levelId: string; hints: number; locked: boolean };
   victory(): void; addHint(): void; start(levelId: string): void;
 }
 export function mountDebugPanel(actions: DebugActions): { refresh(): void } {
   const root = document.createElement('details');
   root.className = 'debug-panel'; root.id = 'debug-panel';
-  root.innerHTML = `<summary>${icon('settings')}<span>Дебаг</span></summary><div class="debug-content"><strong>Проверка игры</strong><p>Тестовые действия сохраняются.</p><label>Уровень<select aria-label="Тестовый уровень">${levels.map(l => `<option value="${l.id}">${l.order} · ${l.title}</option>`).join('')}</select></label><button data-debug="start">${icon('next')}Открыть уровень</button><button data-debug="victory">${icon('check')}Победа</button><button data-debug="hint">${icon('hint')}Добавить подсказку</button><button data-debug="theme">${icon('art')}<span></span></button><a href="./victory-gallery.html" target="_blank" rel="noopener">${icon('book')}Все карточки победы</a><div class="debug-stock" role="status"></div></div>`;
+  root.innerHTML = `<summary>${icon('settings')}<span>Дебаг</span></summary><div class="debug-content"><strong>Проверка игры</strong><p>Тестовые действия сохраняются.</p><label>Уровень<select aria-label="Тестовый уровень"></select></label><button data-debug="start">${icon('next')}Открыть уровень</button><button data-debug="victory">${icon('check')}Победа</button><button data-debug="hint">${icon('hint')}Добавить подсказку</button><button data-debug="theme">${icon('art')}<span></span></button><a href="./victory-gallery.html" target="_blank" rel="noopener">${icon('book')}Все карточки победы</a><div class="debug-stock" role="status"></div></div>`;
   const select = root.querySelector<HTMLSelectElement>('select')!;
+  let catalogue = '';
   const refresh = () => {
     const state = actions.state();
+    const levels = actions.levels(), signature = levels.map(l => l.id).join('|');
+    if (signature !== catalogue) {
+      const selected = select.value; catalogue = signature;
+      select.innerHTML = levels.map(l => `<option value="${l.id}">${l.order} · ${l.title}</option>`).join('');
+      select.value = selected;
+    }
     if (document.activeElement !== select) select.value = state.levelId;
     root.querySelector('.debug-stock')!.textContent = `Подсказки: ${state.hints}`;
     root.querySelector('[data-debug="theme"] span')!.textContent = `Тема: ${currentTheme() === 'dark' ? 'тёмная' : 'светлая'}`;

@@ -1,7 +1,16 @@
 import type { Fact, Topic } from '../core/types';
-export const TOPIC_LABELS: Record<Topic, string> = { space: 'Космос', nature: 'Природа', technology: 'Технологии', art: 'Искусство' };
+import { spaceFacts } from './facts/space';
+import { natureFacts } from './facts/nature';
+import { technologyFacts } from './facts/technology';
+import { artFacts } from './facts/art';
+import { historyFacts } from './facts/history';
+import { geographyFacts } from './facts/geography';
+import { scienceFacts } from './facts/science';
+import { humanFacts } from './facts/human';
+export const TOPIC_LABELS: Record<Topic, string> = { space: 'Космос', nature: 'Природа', technology: 'Технологии', art: 'Искусство',
+  history: 'История', geography: 'География', science: 'Наука', human: 'Человек' };
 const verifiedAt = '2026-10-01';
-export const facts: Fact[] = [
+const legacyFacts: Fact[] = [
   { id: 'venus-rotation', topic: 'space', title: 'Год короче оборота', text: 'Венера оборачивается вокруг своей оси за 243 земных дня, а вокруг Солнца — примерно за 225.', detail: 'Здесь сравниваются вращение вокруг оси и орбитальный период. Солнечные сутки на Венере — отдельная величина, поэтому фраза «день длиннее года» требует уточнения.', source: 'NASA · Venus Facts', sourceUrl: 'https://science.nasa.gov/venus/venus-facts/', verifiedAt },
   { id: 'mars-rust', topic: 'space', title: 'Красная от железа', text: 'Красноватый цвет Марса связан с окислением железных минералов в его грунте.', detail: 'Окисление железа напоминает образование ржавчины. Красноватая пыль покрывает поверхность и может попадать в атмосферу планеты.', source: 'NASA · Mars Facts', sourceUrl: 'https://science.nasa.gov/mars/facts/', verifiedAt },
   { id: 'earth-ocean', topic: 'space', title: 'Планета океана', text: 'Океан покрывает около 71% поверхности Земли.', detail: 'Это доля площади поверхности, а не объёма планеты. По данным NASA, океан также содержит примерно 97% земной воды.', source: 'NASA · Earth Facts', sourceUrl: 'https://science.nasa.gov/earth/facts/', verifiedAt },
@@ -19,3 +28,6 @@ export const facts: Fact[] = [
   { id: 'starry-night-canvas', topic: 'art', title: 'Ночь на холсте', text: 'Ван Гог написал «Звёздную ночь» маслом на холсте в июне 1889 года.', detail: 'В каталоге MoMA указаны место создания Сен-Реми, дата и материал. Текстура масляной живописи — часть выразительности работы.', source: 'MoMA · The Starry Night', sourceUrl: 'https://www.moma.org/collection/works/79802', verifiedAt },
   { id: 'matisse-paper', topic: 'art', title: 'Рисовать ножницами', text: 'В поздних работах Матисс создавал композиции из бумаги, окрашенной гуашью и вырезанной ножницами.', detail: 'Окрашенные формы располагались и соединялись на основе. Так из простых материалов возникали сложные цветовые композиции.', source: 'MoMA · Henri Matisse The Cut-Outs', sourceUrl: 'https://production-gcp.moma.org/interactives/exhibitions/2014/matisse/the-cut-outs.html', verifiedAt },
 ];
+
+export const facts: Fact[] = [...legacyFacts, ...spaceFacts, ...natureFacts, ...technologyFacts, ...artFacts,
+  ...historyFacts, ...geographyFacts, ...scienceFacts, ...humanFacts];
