@@ -15,7 +15,7 @@ import { introArrow, type IntroView } from './ui/intro';
 import { FEEDBACK_DURATION_MS } from './ui/feedback';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { interstitialDue } from './platform/ad-policy';
-import { toggleFactExplanation } from './ui/accordion';
+import { toggleFactReading } from './ui/fact-reading';
 import { clearDepartures, playDeparture } from './ui/departures';
 
 initializeLocalLocale();
@@ -43,7 +43,7 @@ let resultPending = false;
 let error: string | null = null, obstacle: string | null = null, hintBusy = false;
 let hintStartedAt = 0, hintVersion = 0;
 let errorVersion = 0, errorStartedAt = 0;
-let query = '', collectionTopic: Topic | 'all' = 'all', favoritesOnly = false;
+let query = '', collectionTopic: Topic | 'all' = 'all', favoritesOnly = false, collectionLimit = 60;
 const expandedFacts = new Set<string>();
 let clockStamp = performance.now(), activeSessionMs = 0, lastInterstitialAt = 0, lastAdAttemptAt = -60000;
 let victoriesSinceAd = 0, adRequest = false, nextAdAt = 0, otherTab = false;
@@ -113,7 +113,7 @@ function draw(): void {
   const previousDialog = !!document.querySelector('dialog');
   app.innerHTML = render({ profile, level: level(), modal, status, busy: busy || hintBusy,
     hint, error, blocker: obstacle, externalPause: pauseReasons.has('platform') || pauseReasons.has('advertisement') || otherTab,
-    saveStatus: saveLabel(), sdk: sdk.available, collectionTopic, query, favoritesOnly,
+    saveStatus: saveLabel(), sdk: sdk.available, collectionTopic, query, favoritesOnly, collectionLimit,
     detailOpen: expandedFacts.has(profile.levelRewards[level().id]), expandedFacts, intro,
     animationClock, hintElapsed: hint ? animationClock - hintStartedAt : 0,
     errorElapsed: error ? animationClock - errorStartedAt : 0, storageNotice, resultPending });
@@ -133,7 +133,7 @@ function draw(): void {
   activity();
   debugPanel?.refresh();
 }
-function openModal(value: Modal): void { recordTime(); modal = value; status = ''; resultPending = false; clearDepartures(); activity(); draw(); }
+function openModal(value: Modal): void { recordTime(); if (value === 'collection') collectionLimit = 60; modal = value; status = ''; resultPending = false; clearDepartures(); activity(); draw(); }
 function closeModal(): void { recordTime(); modal = modal && ['collection', 'topics', 'settings'].includes(modal) ? 'pause' : null; expandedFacts.clear(); activity(); draw(); sound.unlock(); maybeIntro(); }
 function start(id: string, replayIntro = false): void {
   if (otherTab || adRequest) return;
@@ -314,12 +314,14 @@ app.addEventListener('click', event => {
   if (busy || adRequest || otherTab || pauseReasons.has('platform')) return;
   if (target.dataset.explain) {
     const id = target.dataset.explain;
-    toggleFactExplanation(target) ? expandedFacts.add(id) : expandedFacts.delete(id);
+    toggleFactReading(target) ? expandedFacts.add(id) : expandedFacts.delete(id);
     return;
   }
   if (target.dataset.favorite) {
     const id = target.dataset.favorite;
-    profile.favorites = profile.favorites.includes(id) ? profile.favorites.filter(f => f !== id) : [...profile.favorites, id]; commit(); draw(); return;
+    profile.favorites = profile.favorites.includes(id) ? profile.favorites.filter(f => f !== id) : [...profile.favorites, id];
+    if (modal === 'collection' && favoritesOnly && !profile.favorites.includes(id)) expandedFacts.delete(id);
+    commit(); draw(); return;
   }
   if (target.dataset.topic) {
     const next = toggleTopic(profile, target.dataset.topic as Topic);
@@ -340,7 +342,14 @@ app.addEventListener('click', event => {
     case 'hint': requestHint(); break;
     case 'how-play': if (level().order === 1) start(level().id, true); break;
     case 'next': void nextLevel(); break;
-    case 'favorites': favoritesOnly = !favoritesOnly; draw(); break;
+    case 'favorites': favoritesOnly = !favoritesOnly; collectionLimit = 60; draw(); break;
+    case 'collection-more': {
+      const scroll = document.querySelector<HTMLDialogElement>('#game-dialog')?.scrollTop ?? 0;
+      collectionLimit += 60; draw();
+      const dialog = document.querySelector<HTMLDialogElement>('#game-dialog');
+      if (dialog) dialog.scrollTop = scroll;
+      break;
+    }
     case 'music': profile.settings.music = profile.settings.music === false; commit(); draw(); break;
     case 'sound': profile.settings.sound = !profile.settings.sound; commit(); draw(); break;
     case 'motion': profile.settings.reducedMotion = !profile.settings.reducedMotion; commit(); draw(); break;
@@ -351,7 +360,7 @@ app.addEventListener('click', event => {
     case 'ad-continue': void rewarded('continue'); break;
   }
 });
-app.addEventListener('input', event => { if ((event.target as HTMLElement).id === 'fact-search') { query = (event.target as HTMLInputElement).value; draw(); } });
+app.addEventListener('input', event => { if ((event.target as HTMLElement).id === 'fact-search') { query = (event.target as HTMLInputElement).value; collectionLimit = 60; draw(); } });
 app.addEventListener('change', event => {
   const target = event.target as HTMLSelectElement;
   if (target.id === 'language-choice') {
@@ -363,7 +372,7 @@ app.addEventListener('change', event => {
   }
   if (target.id === 'collection-topic') {
     const value = (event.target as HTMLSelectElement).value;
-    collectionTopic = TOPICS.some(t => t === value) ? value as Topic : 'all'; draw();
+    collectionTopic = TOPICS.some(t => t === value) ? value as Topic : 'all'; collectionLimit = 60; draw();
   }
 });
 window.addEventListener('resize', clearDepartures);

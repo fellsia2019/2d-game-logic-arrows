@@ -7,7 +7,7 @@ const files = list(root);
 for (const file of files) {
   if (/[\sа-яё]/i.test(file)) throw Error(`Invalid filename: ${file}`);
   if (/\.(js|css|html)$/.test(file) && readFileSync(file, 'utf8').includes('__arrowSnapshot')) throw Error('Developer state leaked into release');
-  if (/\.(js|css|html)$/.test(file) && /debug-panel|data-debug|data-gallery|victory-gallery/.test(readFileSync(file, 'utf8'))) throw Error('Test UI leaked into release');
+  if (/\.(js|css|html)$/.test(file) && /debug-panel|data-debug|data-gallery|victory-gallery|fact-review/.test(readFileSync(file, 'utf8'))) throw Error('Test UI leaked into release');
 }
 const bytes = files.reduce((sum, file) => sum + statSync(file).size, 0);
 // Yandex specifies 100 MB before ZIP compression; use decimal MB conservatively.

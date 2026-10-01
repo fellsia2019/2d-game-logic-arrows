@@ -7,6 +7,11 @@ import { historyFacts } from './facts/history';
 import { geographyFacts } from './facts/geography';
 import { scienceFacts } from './facts/science';
 import { humanFacts } from './facts/human';
+import { detailExpansions } from './facts/detail-expansions';
+import { generalIgnoranceFacts } from './facts/general-ignorance';
+import { everydayFacts } from './facts/everyday';
+import { verifiedFacts } from './facts/verified-expansion';
+import { secondExpansionFacts } from './facts/verified-expansion-2';
 export const TOPIC_LABELS: Record<Topic, string> = { space: 'Космос', nature: 'Природа', technology: 'Технологии', art: 'Искусство',
   history: 'История', geography: 'География', science: 'Наука', human: 'Человек' };
 const verifiedAt = '2026-10-01';
@@ -15,10 +20,10 @@ const legacyFacts: Fact[] = [
   { id: 'mars-rust', topic: 'space', title: 'Красная от железа', text: 'Красноватый цвет Марса связан с окислением железных минералов в его грунте.', detail: 'Окисление железа напоминает образование ржавчины. Красноватая пыль покрывает поверхность и может попадать в атмосферу планеты.', source: 'NASA · Mars Facts', sourceUrl: 'https://science.nasa.gov/mars/facts/', verifiedAt },
   { id: 'earth-ocean', topic: 'space', title: 'Планета океана', text: 'Океан покрывает около 71% поверхности Земли.', detail: 'Это доля площади поверхности, а не объёма планеты. По данным NASA, океан также содержит примерно 97% земной воды.', source: 'NASA · Earth Facts', sourceUrl: 'https://science.nasa.gov/earth/facts/', verifiedAt },
   { id: 'jupiter-rotation', topic: 'space', title: 'Быстрый гигант', text: 'Юпитер делает оборот вокруг своей оси примерно за десять часов.', detail: 'Несмотря на размеры, планета вращается очень быстро. Это вращение связано с сильными струйными течениями и полосатым рисунком облаков.', source: 'NASA · Jupiter Facts', sourceUrl: 'https://science.nasa.gov/jupiter/jupiter-facts/', verifiedAt },
-  { id: 'octopus-hearts', topic: 'nature', title: 'Три сердца', text: 'У осьминога три сердца: два прокачивают кровь через жабры, а третье — по телу.', detail: 'Жаберные сердца помогают крови получать кислород. Системное сердце отправляет насыщенную кислородом кровь к остальным органам.', source: 'Smithsonian Ocean · Cephalopods', sourceUrl: 'https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives', verifiedAt },
-  { id: 'octopus-blood', topic: 'nature', title: 'Голубая кровь', text: 'Кислород в крови осьминога переносит гемоцианин — белок, содержащий медь.', detail: 'В отличие от железосодержащего гемоглобина, гемоцианин при связывании кислорода придаёт крови голубой цвет.', source: 'Smithsonian Ocean · Cephalopods', sourceUrl: 'https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives', verifiedAt },
-  { id: 'panda-thumb', topic: 'nature', title: 'Почти большой палец', text: 'Красная панда держит бамбук с помощью «ложного большого пальца» — изменённой кости запястья.', detail: 'Это не дополнительный обычный палец. Такая особенность помогает животному удерживать стебли во время еды.', source: 'Smithsonian National Zoo · Red Panda', sourceUrl: 'https://nationalzoo.si.edu/animals/red-panda', verifiedAt },
-  { id: 'panda-tail', topic: 'nature', title: 'Хвост для равновесия', text: 'Длинный пушистый хвост красной панды помогает ей балансировать на деревьях и защищаться от холода.', detail: 'Красные панды хорошо лазают. Их хвост полезен и при перемещении по ветвям, и в холодной горной среде обитания.', source: 'Smithsonian National Zoo · Red Panda', sourceUrl: 'https://nationalzoo.si.edu/animals/red-panda', verifiedAt },
+  { id: 'octopus-hearts', topic: 'nature', title: 'Три сердца осьминога', text: 'У осьминога три сердца: два прокачивают кровь через жабры, а третье — по телу.', detail: 'Два жаберных сердца осьминога помогают крови получать кислород. Третье сердце отправляет насыщенную кислородом кровь к остальным органам.', source: 'Smithsonian Ocean · Cephalopods', sourceUrl: 'https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives', verifiedAt },
+  { id: 'octopus-blood', topic: 'nature', title: 'Почему кровь осьминога голубая', text: 'Кислород в крови осьминога переносит гемоцианин — белок, содержащий медь.', detail: 'Кровь осьминога выглядит голубой при насыщении кислородом благодаря гемоцианину с медью, а не гемоглобину с железом, как у человека.', source: 'Smithsonian Ocean · Cephalopods', sourceUrl: 'https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives', verifiedAt },
+  { id: 'panda-thumb', topic: 'nature', title: '«Большой палец» красной панды', text: 'Красная панда держит бамбук с помощью «ложного большого пальца» — изменённой кости запястья.', detail: '«Ложный палец» красной панды — не дополнительный обычный палец, а изменённая кость запястья. Она помогает удерживать стебли во время еды.', source: 'Smithsonian National Zoo · Red Panda', sourceUrl: 'https://nationalzoo.si.edu/animals/red-panda', verifiedAt },
+  { id: 'panda-tail', topic: 'nature', title: 'Хвост красной панды — балансир', text: 'Длинный пушистый хвост красной панды помогает ей балансировать на деревьях и защищаться от холода.', detail: 'Красные панды хорошо лазают. Их длинный хвост помогает держать равновесие на ветвях и укрываться в холодной горной среде.', source: 'Smithsonian National Zoo · Red Panda', sourceUrl: 'https://nationalzoo.si.edu/animals/red-panda', verifiedAt },
   { id: 'metre-light', topic: 'technology', title: 'Линейка из света', text: 'Метр определён через путь света в вакууме за 1/299 792 458 секунды.', detail: 'Скорость света в вакууме зафиксирована как 299 792 458 метров в секунду. Определение не зависит от конкретной металлической линейки.', source: 'BIPM · SI unit metre', sourceUrl: 'https://www.bipm.org/en/si-base-units/metre', verifiedAt },
   { id: 'second-caesium', topic: 'technology', title: 'Атомная секунда', text: 'Определение секунды связано с частотой определённого перехода атома цезия-133.', detail: 'Для этого перехода зафиксирована частота 9 192 631 770 герц. На атомных переходах основаны воспроизводимые эталоны времени.', source: 'BIPM · SI unit second', sourceUrl: 'https://www.bipm.org/en/si-base-units/second', verifiedAt },
   { id: 'kilogram-planck', topic: 'technology', title: 'Масса через константу', text: 'Современное определение килограмма основано на фиксированном значении постоянной Планка.', detail: 'Определение массы связано с физической константой, а не с массой единственного материального прототипа. Метр и секунда также участвуют в формулировке.', source: 'BIPM · SI unit kilogram', sourceUrl: 'https://www.bipm.org/en/si-base-units/kilogram', verifiedAt },
@@ -29,5 +34,13 @@ const legacyFacts: Fact[] = [
   { id: 'matisse-paper', topic: 'art', title: 'Рисовать ножницами', text: 'В поздних работах Матисс создавал композиции из бумаги, окрашенной гуашью и вырезанной ножницами.', detail: 'Окрашенные формы располагались и соединялись на основе. Так из простых материалов возникали сложные цветовые композиции.', source: 'MoMA · Henri Matisse The Cut-Outs', sourceUrl: 'https://production-gcp.moma.org/interactives/exhibitions/2014/matisse/the-cut-outs.html', verifiedAt },
 ];
 
-export const facts: Fact[] = [...legacyFacts, ...spaceFacts, ...natureFacts, ...technologyFacts, ...artFacts,
+const catalog: Fact[] = [...legacyFacts, ...spaceFacts, ...natureFacts, ...technologyFacts, ...artFacts,
   ...historyFacts, ...geographyFacts, ...scienceFacts, ...humanFacts];
+export const facts: Fact[] = [
+  ...catalog.map(fact => ({ ...fact,
+    detail: `${fact.detail}\n\n${detailExpansions[fact.id]?.[0] ?? ''}`.trim() })),
+  ...generalIgnoranceFacts,
+  ...everydayFacts,
+  ...verifiedFacts,
+  ...secondExpansionFacts,
+];

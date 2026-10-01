@@ -44,7 +44,7 @@
   --explain-line:var(--topic-button-border);
   --explain-text:var(--topic-button-text);
 }
-.fact-card[data-topic-palette] .fact-explain-trigger:hover{
+.fact-card[data-topic-palette] .fact-read-trigger:hover{
   background:var(--topic-hover);
   border-color:var(--topic-accent);
   filter:none;

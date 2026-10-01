@@ -92,11 +92,12 @@ describe('Russian and English localization', () => {
       }
     }
   });
-  it('translates exactly all 160 facts while preserving identity, sources, and saved progress', () => {
-    expect(Object.keys(englishFacts).sort()).toEqual(facts.map(f => f.id).sort());
+  it('translates all 604 facts while preserving identity, sources, and saved progress', () => {
+    expect(Object.keys(englishFacts).sort()).toEqual(facts.filter(f => !f.id.startsWith('ignorance-') && !f.id.startsWith('everyday-') && !f.id.startsWith('verified-') && !f.id.startsWith('new-')).map(f => f.id).sort());
     const v = view(); v.profile.unlocked = facts.map(f => f.id); v.profile.favorites = [facts[0].id];
     const saved = JSON.stringify(v.profile);
     setLocale('en');
+    expect(new Set(facts.map(f => localizedFact(f).title.toLocaleLowerCase('en').trim())).size).toBe(facts.length);
     for (const fact of facts) {
       const en = localizedFact(fact);
       expect(en.id).toBe(fact.id); expect(en.topic).toBe(fact.topic);

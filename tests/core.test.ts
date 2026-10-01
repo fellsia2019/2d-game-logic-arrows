@@ -96,10 +96,13 @@ describe('fixed content', () => {
       expect(arrows).toHaveLength(0);
     }
   });
-  it('has 160 distinct sourced facts and twenty per topic', () => {
-    expect(facts).toHaveLength(160); expect(new Set(facts.map(f => f.id)).size).toBe(160);
+  it('has 604 distinct sourced facts and every topic remains populated', () => {
+    expect(facts).toHaveLength(604); expect(new Set(facts.map(f => f.id)).size).toBe(604);
+    expect(facts.filter(f => f.id.startsWith('verified-'))).toHaveLength(200);
+    expect(facts.filter(f => f.id.startsWith('new-'))).toHaveLength(200);
+    expect(new Set(facts.map(f => f.title.toLocaleLowerCase('ru').trim())).size).toBe(facts.length);
     expect(TOPICS).toHaveLength(8);
-    for (const topic of TOPICS) expect(facts.filter(f => f.topic === topic)).toHaveLength(20);
+    for (const topic of TOPICS) expect(facts.filter(f => f.topic === topic).length).toBeGreaterThanOrEqual(20);
     for (const f of facts) { expect(f.sourceUrl).toMatch(/^https:\/\//); expect(f.verifiedAt).toBe('2026-10-01'); }
   });
 });
@@ -123,14 +126,16 @@ describe('transactional rewards', () => {
   it('uses the random draw across unseen cards in selected topics only', () => {
     const p = wonProfile(0, { ...freshProfile(), topics: ['science', 'human'] });
     const first = finish(p, levels[0], facts, () => 0);
-    const last = finish(p, levels[0], facts, () => 0.999999);
+    const eligible = facts.filter(f => p.topics.includes(f.topic));
+    const humanIndex = eligible.findIndex(f => f.topic === 'human');
+    const last = finish(p, levels[0], facts, () => (humanIndex + 0.5) / eligible.length);
     expect(facts.find(f => f.id === first.lastFactReward?.factId)?.topic).toBe('science');
     expect(facts.find(f => f.id === last.lastFactReward?.factId)?.topic).toBe('human');
     const one = { ...first, topics: ['science' as const] }; expect(toggleTopic(one, 'science')).toBe(one);
   });
   it('opens the whole catalogue without repetition across levels and replays', () => {
     let p = freshProfile();
-    for (let i = 0; i < 160; i++) {
+    for (let i = 0; i < facts.length; i++) {
       const index = i % levels.length;
       p = finish(wonProfile(index, p, `catalogue-${i}`), levels[index], facts, () => 0);
       expect(p.unlocked).toHaveLength(i + 1);

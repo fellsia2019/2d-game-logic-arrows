@@ -1,7 +1,7 @@
 // Russian source strings are stable keys; dynamic values stay outside translations.
 export const englishUI: Record<string, string> = {
   'из 3 звёзд': 'of 3 stars',
-  'Почему это так?': 'Why is that?',
+  'Узнать больше': 'Learn more', 'К карточке': 'Back to card',
   'Источник:': 'Source:',
   'Убрать из избранного': 'Remove from favorites',
   'В избранное': 'Add to favorites',
@@ -19,6 +19,7 @@ export const englishUI: Record<string, string> = {
   'Поиск по фактам': 'Search facts', 'Что хочется вспомнить?': 'What would you like to find?',
   'Тема': 'Topic', 'Все темы': 'All topics', 'Избранное': 'Favorites',
   'Пока ничего не найдено': 'No matches yet', 'Здесь начинается любопытство': 'Your discoveries start here',
+  'Показать ещё': 'Show more',
   'Попробуй другую тему или измени поиск.': 'Try another topic or change your search.',
   'Очисти первое поле — и твой первый факт появится здесь.': 'Clear your first board to collect your first fact here.',
   'Награда после победы': 'Your reward for winning', 'Что тебе интересно?': 'What interests you?',
@@ -52,8 +53,8 @@ export const englishUI: Record<string, string> = {
   'Уровень': 'Level', 'Допустимых ошибок осталось:': 'Mistakes remaining:',
   'Как играть': 'How to play', 'Подсказка': 'Hint', 'Пропустить': 'Skip',
   'Обновить страницу': 'Reload page', 'Игра на паузе': 'Game paused',
-  'Проверка оформления': 'Design preview', 'Все карточки победы': 'All victory cards', 'Все': 'All',
-  'фактов. Здесь действия не меняют игровой прогресс.': 'facts. Actions here do not affect game progress.',
+  'Проверка оформления': 'Design preview', 'Все карточки победы': 'All victory cards',
+  'Карточек в каталоге:': 'Cards in the catalog:', 'Здесь действия не меняют игровой прогресс.': 'Actions here do not affect game progress.',
   'Тема:': 'Theme:', 'тёмная': 'dark', 'светлая': 'light', 'В игру': 'Back to game',
   'Показано карточек:': 'Cards shown:', 'Дебаг': 'Debug', 'Проверка игры': 'Game testing',
   'Тестовые действия сохраняются.': 'Test actions are saved.', 'Тестовый уровень': 'Test level',
