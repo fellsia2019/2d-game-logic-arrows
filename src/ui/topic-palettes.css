@@ -1,0 +1,68 @@
+/* Colours come exclusively from the typed registry in topic-palettes.ts. */
+[data-topic-palette]{
+  --topic-surface:var(--topic-dark-surface);
+  --topic-edge:var(--topic-dark-edge);
+  --topic-line:var(--topic-dark-line);
+  --topic-accent:var(--topic-dark-accent);
+  --topic-badge:var(--topic-dark-badge);
+  --topic-button:var(--topic-dark-button);
+  --topic-button-border:var(--topic-dark-button-border);
+  --topic-button-text:var(--topic-dark-button-text);
+  --topic-hover:var(--topic-dark-hover);
+}
+@media(prefers-color-scheme:light){
+  :root:not([data-theme="dark"]) [data-topic-palette]{
+    --topic-surface:var(--topic-light-surface);
+    --topic-edge:var(--topic-light-edge);
+    --topic-line:var(--topic-light-line);
+    --topic-accent:var(--topic-light-accent);
+    --topic-badge:var(--topic-light-badge);
+    --topic-button:var(--topic-light-button);
+    --topic-button-border:var(--topic-light-button-border);
+    --topic-button-text:var(--topic-light-button-text);
+    --topic-hover:var(--topic-light-hover);
+  }
+}
+:root[data-theme="light"] [data-topic-palette]{
+  --topic-surface:var(--topic-light-surface);
+  --topic-edge:var(--topic-light-edge);
+  --topic-line:var(--topic-light-line);
+  --topic-accent:var(--topic-light-accent);
+  --topic-badge:var(--topic-light-badge);
+  --topic-button:var(--topic-light-button);
+  --topic-button-border:var(--topic-light-button-border);
+  --topic-button-text:var(--topic-light-button-text);
+  --topic-hover:var(--topic-light-hover);
+}
+.fact-card[data-topic-palette]{
+  --fact-surface:var(--topic-surface);
+  --fact-edge:var(--topic-edge);
+  --fact-line:var(--topic-line);
+  --fact-accent:var(--topic-accent);
+  --fact-badge:var(--topic-badge);
+  --explain-bg:var(--topic-button);
+  --explain-line:var(--topic-button-border);
+  --explain-text:var(--topic-button-text);
+}
+.fact-card[data-topic-palette] .fact-explain-trigger:hover{
+  background:var(--topic-hover);
+  border-color:var(--topic-accent);
+  filter:none;
+}
+.topic-chip[data-topic-palette],.gallery-filters [data-topic-palette]{
+  background:var(--topic-edge);
+  border-color:var(--topic-line);
+  font-size:18px;
+  font-weight:700;
+}
+.topic-chip[data-topic-palette] svg,.gallery-filters [data-topic-palette] svg{color:var(--topic-accent)}
+.topic-chip[data-topic-palette].selected,.gallery-filters [data-topic-palette].active{
+  background:var(--topic-badge);
+  border-color:var(--topic-accent);
+}
+.topic-chip[data-topic-palette]:hover,.gallery-filters [data-topic-palette]:hover{
+  background:var(--topic-hover);
+  border-color:var(--topic-accent);
+  color:var(--topic-button-text);
+  box-shadow:0 5px 18px var(--shadow);
+}

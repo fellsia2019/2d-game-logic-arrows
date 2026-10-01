@@ -1,0 +1,24 @@
+// Shared 24 px SVG grid. Rounded 1.8 px strokes, optical room around each shape.
+const paths: Record<string, string> = {
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  undo: '<path d="M8 7H4V3M4 7c5-6 16-3 16 5a8 8 0 0 1-12 7"/>',
+  hint: '<path d="M9 17h6m-5 4h4M8 13c-4-5-1-10 4-10s8 5 4 10l-1 4H9z"/>',
+  book: '<path d="M12 5c-4-2-7-2-10-1v15c4-1 7-1 10 1 3-2 6-2 10-1V4c-3-1-6-1-10 1zm0 0v15"/>',
+  sound: '<path d="M3 9h4l5-4v14l-5-4H3zm13-2c4 3 4 7 0 10m3-13c6 5 6 11 0 16"/>',
+  close: '<path d="m5 5 14 14M19 5 5 19"/>',
+  next: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
+  back: '<path d="M20 12H4m6-6-6 6 6 6"/>',
+  chevron: '<path d="m6 9 6 6 6-6"/>',
+  restart: '<path d="M4 9a8 8 0 1 1 0 6M4 3v6h6"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4m0 4h.01"/>',
+  check: '<path d="m5 12 4 4L19 6"/>',
+  star: '<path d="m12 3 2.7 5.6 6.2.9-4.5 4.4 1.1 6.2-5.5-2.9-5.5 2.9 1.1-6.2-4.5-4.4 6.2-.9z" fill="currentColor" stroke-width="1.3"/>',
+  heart: '<path d="M12 20S3 14.5 3 8.5a5 5 0 0 1 9-3 5 5 0 0 1 9 3C21 14.5 12 20 12 20z"/>',
+  space: '<circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="10" ry="4.3" transform="rotate(-35 12 12)"/><path d="m18 3 .5 1.5L20 5l-1.5.5L18 7l-.5-1.5L16 5l1.5-.5z" fill="currentColor" stroke="none"/>',
+  nature: '<path d="M20 3c-8-1-16 2-16 9a7 7 0 0 0 7 7c7 0 10-8 9-16zM4 21 16 9m-6 6V9m0 6h6"/>',
+  technology: '<rect x="6" y="6" width="12" height="12" rx="3"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3"/>',
+  art: '<path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.7-3.1c-.7-1 .1-2.4 1.3-2.4h2a3 3 0 0 0 3-3C21 7 17 3 12 3z"/><circle cx="7.5" cy="10" r="1" fill="currentColor"/><circle cx="11" cy="7" r="1" fill="currentColor"/><circle cx="15.5" cy="8" r="1" fill="currentColor"/>',
+  video: '<rect x="3" y="5" width="18" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/>',
+  settings: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--panel)"/><circle cx="15" cy="17" r="3" fill="var(--panel)"/>',
+};
+export const icon = (name: string): string => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths[name] ?? paths.next}</svg>`;
