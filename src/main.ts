@@ -47,10 +47,11 @@ let query = '', collectionTopic: Topic | 'all' = 'all', favoritesOnly = false, c
 const expandedFacts = new Set<string>();
 let clockStamp = performance.now(), activeSessionMs = 0, lastInterstitialAt = 0, lastAdAttemptAt = -60000;
 let victoriesSinceAd = 0, adRequest = false, nextAdAt = 0, otherTab = false;
+let purchaseRequest = false;
 let storageNotice: string | null = null;
 const motion = () => profile.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
 const level = () => levelById(profile.attempt!.levelId);
-const active = () => !booting && profile.attempt?.phase === 'playing' && !intro && !busy && !modal && !pauseReasons.paused && !otherTab;
+const active = () => !booting && profile.attempt?.phase === 'playing' && !intro && !busy && !purchaseRequest && !modal && !pauseReasons.paused && !otherTab;
 function recordTime(): void {
   const now = performance.now(), elapsed = Math.max(0, Math.min(now - clockStamp, 1500));
   if (active()) { profile.attempt!.activeMs += Math.floor(elapsed); activeSessionMs += elapsed; }
@@ -60,12 +61,12 @@ function activity(): void {
   pauseReasons.set('menu', !!modal);
   document.body.classList.toggle('intro-paused', !!intro && pauseReasons.paused);
   sound.enabled = profile.settings.sound; sound.musicEnabled = profile.settings.music !== false;
-  sound.pause(pauseReasons.paused, otherTab || ['hidden', 'focus', 'platform', 'advertisement'].some(reason => pauseReasons.has(reason)));
+  sound.pause(pauseReasons.paused, otherTab || ['hidden', 'focus', 'platform', 'advertisement', 'purchase'].some(reason => pauseReasons.has(reason)));
   sdk.setGameplay(active());
 }
 const sdk = new YandexAdapter((value, source) => {
   recordTime(); pauseReasons.set(source, value); activity(); draw();
-});
+}, undefined, () => draw());
 const worker = new Worker(new URL('./solver/worker.ts', import.meta.url), { type: 'module' });
 let requestId = 0;
 let pendingHint: { id: number; attemptId: string; revision: number; timer: number } | null = null;
@@ -112,17 +113,19 @@ function draw(): void {
   const position = input?.selectionStart;
   const previousDialog = !!document.querySelector('dialog');
   app.innerHTML = render({ profile, level: level(), modal, status, busy: busy || hintBusy,
-    hint, error, blocker: obstacle, externalPause: pauseReasons.has('platform') || pauseReasons.has('advertisement') || otherTab,
+    hint, error, blocker: obstacle, externalPause: pauseReasons.has('platform') || pauseReasons.has('advertisement') || pauseReasons.has('purchase') || otherTab,
     saveStatus: saveLabel(), sdk: sdk.available, collectionTopic, query, favoritesOnly, collectionLimit,
+    noAds: sdk.purchasesSupported ? sdk.purchases.view : undefined,
     detailOpen: expandedFacts.has(profile.levelRewards[level().id]), expandedFacts, intro,
     animationClock, hintElapsed: hint ? animationClock - hintStartedAt : 0,
     errorElapsed: error ? animationClock - errorStartedAt : 0, storageNotice, resultPending });
   if (intro) app.querySelectorAll<HTMLButtonElement>('.game-stage button').forEach(b => { b.disabled = true; });
+  if (purchaseRequest) app.querySelectorAll<HTMLButtonElement>('button').forEach(b => { b.disabled = true; });
   const dialog = document.querySelector<HTMLDialogElement>('#game-dialog');
   if (dialog) {
     const heading = dialog.querySelector('h2'); if (heading) heading.id = 'dialog-title';
     dialog.showModal();
-    dialog.addEventListener('cancel', event => { event.preventDefault(); if (modal) closeModal(); });
+    dialog.addEventListener('cancel', event => { event.preventDefault(); if (modal && !purchaseRequest && !adRequest) closeModal(); });
   }
   if (key && (!dialog || previousDialog)) {
     const target = app.querySelector<HTMLElement>(key);
@@ -134,9 +137,9 @@ function draw(): void {
   debugPanel?.refresh();
 }
 function openModal(value: Modal): void { recordTime(); if (value === 'collection') collectionLimit = 60; modal = value; status = ''; resultPending = false; clearDepartures(); activity(); draw(); }
-function closeModal(): void { recordTime(); modal = modal && ['collection', 'topics', 'settings'].includes(modal) ? 'pause' : null; expandedFacts.clear(); activity(); draw(); sound.unlock(); maybeIntro(); }
+function closeModal(): void { if (purchaseRequest) return; recordTime(); modal = modal && ['collection', 'topics', 'settings'].includes(modal) ? 'pause' : null; expandedFacts.clear(); activity(); draw(); sound.unlock(); maybeIntro(); }
 function start(id: string, replayIntro = false): void {
-  if (otherTab || adRequest) return;
+  if (otherTab || adRequest || purchaseRequest) return;
   recordTime(); profile.attempt = newAttempt(levelById(id)); modal = null; busy = false; hint = null; resultPending = false; clearDepartures();
   error = null; obstacle = null; errorVersion++; status = ''; expandedFacts.clear();
   cancelHint(); commit(); activity(); draw(); maybeIntro(replayIntro);
@@ -277,7 +280,7 @@ worker.onmessage = (event: MessageEvent<{ requestId: number; solution: Solution 
 };
 worker.onerror = () => { cancelHint(); status = `${t("Подсказка временно недоступна.")} ${recoveryAdvice()}`; draw(); };
 async function rewarded(placement: 'hint' | 'continue'): Promise<void> {
-  if (!sdk.available || busy || adRequest || otherTab || pauseReasons.paused || performance.now() < nextAdAt) return;
+  if (!sdk.available || busy || adRequest || purchaseRequest || otherTab || pauseReasons.paused || performance.now() < nextAdAt) return;
   if (placement === 'continue' && (profile.attempt!.phase !== 'lost' || profile.attempt!.continued)) return;
   if (placement === 'hint' && profile.attempt!.phase !== 'playing') return;
   recordTime(); adRequest = true; commit();
@@ -291,16 +294,26 @@ async function rewarded(placement: 'hint' | 'continue'): Promise<void> {
   draw();
 }
 async function nextLevel(): Promise<void> {
-  if (adRequest || busy || otherTab || profile.attempt!.phase !== 'won') return;
+  if (adRequest || purchaseRequest || busy || otherTab || profile.attempt!.phase !== 'won') return;
   const next = campaign.get(level().order + 1);
   adRequest = true;
-  if (interstitialDue({ available: sdk.available, victories: victoriesSinceAd, activeMs: activeSessionMs,
+  if (interstitialDue({ available: sdk.interstitialAvailable, victories: victoriesSinceAd, activeMs: activeSessionMs,
     lastInterstitialAt, lastAdAttemptAt, nextTeaching: !!next.teaching })) {
     lastAdAttemptAt = activeSessionMs; status = t('Реклама перед следующим уровнем'); commit(); draw();
     const shown = await sdk.interstitial();
     if (shown) { lastInterstitialAt = activeSessionMs; victoriesSinceAd = 0; }
   }
   adRequest = false; start(next.id);
+}
+async function noAdsPurchase(restore = false): Promise<void> {
+  if (purchaseRequest || adRequest || busy || otherTab || pauseReasons.has('platform')) return;
+  if (!sdk.purchasesSupported || (!restore && sdk.purchases.view.status !== 'ready')) return;
+  recordTime(); commit();
+  if (otherTab) return;
+  purchaseRequest = true; draw();
+  try {
+    if (restore) await sdk.restorePurchases(); else await sdk.buyNoAds();
+  } finally { purchaseRequest = false; verifySave(); draw(); }
 }
 app.addEventListener('click', event => {
   const target = (event.target as Element).closest<HTMLElement>('button, a[data-action]');
@@ -311,7 +324,7 @@ app.addEventListener('click', event => {
   if (target.dataset.action === 'skip-intro') { if (intro && !otherTab && !pauseReasons.has('platform')) endIntro(); return; }
   if (intro) return;
   if (target.dataset.arrow) { performMove(target.dataset.arrow); return; }
-  if (busy || adRequest || otherTab || pauseReasons.has('platform')) return;
+  if (busy || adRequest || purchaseRequest || otherTab || pauseReasons.has('platform')) return;
   if (target.dataset.explain) {
     const id = target.dataset.explain;
     toggleFactReading(target) ? expandedFacts.add(id) : expandedFacts.delete(id);
@@ -358,6 +371,8 @@ app.addEventListener('click', event => {
       if (performance.now() < nextAdAt) { closeModal(); status = t('Реклама будет доступна через несколько секунд. Нажми «Подсказка» ещё раз.'); draw(); break; }
       closeModal(); void rewarded('hint'); break;
     case 'ad-continue': void rewarded('continue'); break;
+    case 'buy-no-ads': void noAdsPurchase(); break;
+    case 'restore-purchases': void noAdsPurchase(true); break;
   }
 });
 app.addEventListener('input', event => { if ((event.target as HTMLElement).id === 'fact-search') { query = (event.target as HTMLInputElement).value; collectionLimit = 60; draw(); } });
@@ -380,7 +395,7 @@ window.addEventListener('resize', clearDepartures);
 document.addEventListener('keydown', event => {
   if (otherTab) return;
   if (intro && event.key === 'Escape') { event.preventDefault(); if (!otherTab && !pauseReasons.has('platform')) endIntro(); return; }
-  if (event.key === 'Escape' && !document.querySelector('dialog') && !busy && !adRequest) { event.preventDefault(); openModal('pause'); return; }
+  if (event.key === 'Escape' && !document.querySelector('dialog') && !busy && !adRequest && !purchaseRequest) { event.preventDefault(); openModal('pause'); return; }
   const current = (event.target as Element).closest<HTMLElement>('[data-arrow]');
   const vectors: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowRight: [1, 0], ArrowDown: [0, 1], ArrowLeft: [-1, 0] };
   if (!current || !vectors[event.key] || !active()) return;
@@ -411,7 +426,7 @@ void Promise.all([sdk.initialize(), campaign.prepare(campaignStart.order)]).then
           const prepared = campaign.available();
           return prepared.some(l => l.id === level().id) ? prepared : [level(), ...prepared];
         },
-        state: () => ({ levelId: level().id, hints: profile.hints, locked: booting || otherTab || adRequest }),
+        state: () => ({ levelId: level().id, hints: profile.hints, locked: booting || otherTab || adRequest || purchaseRequest }),
         start: id => { if (verifySave()) { endIntro(false); start(id); } },
         addHint: () => { if (!verifySave()) return; profile.hints = Math.min(10000, profile.hints + 1); commit(); draw(); },
         victory: () => {

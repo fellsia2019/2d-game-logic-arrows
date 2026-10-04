@@ -1,8 +1,11 @@
 import { portalLocale, setAutomaticLocale } from '../i18n';
+import { NoAdsPurchases, type Payments } from './purchases';
+
 export interface Sdk {
   environment: { i18n: { lang: string } };
   features: { LoadingAPI?: { ready(): void }; GameplayAPI?: { start(): void; stop(): void } };
   on(event: 'game_api_pause' | 'game_api_resume', callback: () => void): void;
+  getPayments?(options: { signed: false }): Promise<Payments>;
   adv: {
     showRewardedVideo(options: { callbacks: { onOpen(): void; onRewarded(): void; onClose(): void; onError(): void } }): void;
     showFullscreenAdv(options: { callbacks: { onOpen(): void; onClose(shown: boolean): void; onError(): void } }): void;
@@ -29,10 +32,20 @@ export class YandexAdapter {
   private gameplay = false;
   private gameplaySent = false;
   private busy = false;
+  readonly purchases: NoAdsPurchases;
   language = 'ru';
-  constructor(private pause: (paused: boolean, source: 'platform' | 'advertisement') => void,
-    private provider: () => Promise<Sdk> = loadSdk) {}
+  constructor(private pause: (paused: boolean, source: 'platform' | 'advertisement' | 'purchase') => void,
+    private provider: () => Promise<Sdk> = loadSdk, purchasesChanged: () => void = () => {}) {
+    this.purchases = new NoAdsPurchases(() => {
+      if (!this.sdk?.getPayments) return Promise.reject(new Error('Payments unavailable'));
+      return this.sdk.getPayments({ signed: false });
+    }, purchasesChanged);
+  }
   get available(): boolean { return !!this.sdk; }
+  get purchasesSupported(): boolean { return !!this.sdk?.getPayments; }
+  get interstitialAvailable(): boolean {
+    return this.available && (!this.purchasesSupported || this.purchases.canShowInterstitial);
+  }
   async initialize(): Promise<boolean> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -41,7 +54,10 @@ export class YandexAdapter {
       })]); this.language = this.sdk.environment.i18n.lang; setAutomaticLocale(portalLocale(this.language));
       this.sdk.on('game_api_pause', () => this.pause(true, 'platform'));
       this.sdk.on('game_api_resume', () => this.pause(false, 'platform'));
-      this.sync(); return true;
+      this.sync();
+      // Purchase discovery must not hold Game Ready or a playable screen hostage to the network.
+      if (this.purchasesSupported) void this.purchases.refresh();
+      return true;
     } catch { return false; } finally { clearTimeout(timer); }
   }
   markReady(): void { this.ready = true; this.sync(); }
@@ -70,7 +86,7 @@ export class YandexAdapter {
     });
   }
   async interstitial(): Promise<boolean> {
-    if (!this.sdk || this.busy) return false;
+    if (!this.interstitialAvailable || this.busy) return false;
     this.busy = true; this.pause(true, 'advertisement');
     return new Promise(resolve => {
       let done = false;
@@ -78,6 +94,18 @@ export class YandexAdapter {
       try { this.sdk!.adv.showFullscreenAdv({ callbacks: { onOpen: () => {}, onClose: finish, onError: () => finish(false) } }); }
       catch { finish(false); }
     });
+  }
+  async buyNoAds(): Promise<boolean> {
+    if (!this.purchasesSupported || this.busy || this.purchases.view.status !== 'ready') return false;
+    this.busy = true; this.pause(true, 'purchase');
+    try { return await this.purchases.buy(); }
+    finally { this.busy = false; this.pause(false, 'purchase'); }
+  }
+  async restorePurchases(): Promise<void> {
+    if (!this.purchasesSupported || this.busy) return;
+    this.busy = true;
+    try { await this.purchases.refresh(); }
+    finally { this.busy = false; }
   }
 }
 export class PauseReasons {

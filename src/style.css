@@ -108,3 +108,20 @@ body:has(.storage-notice){overflow:hidden}
 .collection-more{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:20px;color:var(--muted)}.collection-more .secondary{min-width:170px}
 .collection-dialog.reading-mode .collection-list .fact-card:not(.reading){display:none}
 @media(max-width:420px){.fact-long-read p{font-size:16px;line-height:1.64}}
+
+/* The permanent purchase uses the same surfaces and actions as the settings. */
+.no-ads-card{margin-top:24px;padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--soft)}
+.no-ads-heading{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.no-ads-heading>svg{width:26px;height:26px;flex:none;color:var(--accent)}
+.no-ads-heading h3{font-size:22px;line-height:1.3;margin:0}
+.no-ads-card p{font-size:16px;line-height:1.5;color:var(--muted);margin:0 0 12px;overflow-wrap:anywhere}
+.no-ads-card .purchase-status{color:var(--text)}
+.purchase-status:empty,.purchase-actions:empty{display:none}
+.purchase-actions{display:grid;gap:10px;margin-top:16px}
+.no-ads-card .purchase-note{margin:14px 0 0}
+.purchase-button{flex-wrap:wrap;font-size:18px}
+.purchase-price{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.purchase-price img{object-fit:contain;flex:none}
+.no-ads-owned{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:16px;text-align:center}
+.no-ads-owned svg{width:22px;height:22px;flex:none;color:var(--accent)}
+@media(max-width:360px){.no-ads-card{padding:16px}.no-ads-heading{gap:8px}.no-ads-heading h3{font-size:20px}.purchase-actions .secondary{padding-inline:8px}}

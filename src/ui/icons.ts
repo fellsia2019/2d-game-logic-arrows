@@ -23,6 +23,7 @@ const paths: Record<string, string> = {
   science: '<path d="M9 3h6m-5 0v6l-6 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-6-9V3M7 14h10"/><circle cx="10" cy="17" r=".8" fill="currentColor"/><circle cx="14" cy="18" r=".8" fill="currentColor"/>',
   human: '<path d="M8 21v-4a8 8 0 1 1 10-7l2 3h-3v4h-4v4M8 8a2 2 0 0 1 3-1 2 2 0 0 1 3 1c0 2-3 4-3 4S8 10 8 8z"/>',
   video: '<rect x="3" y="5" width="18" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/>',
+  shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z"/><path d="m8 12 3 3 5-6"/>',
   settings: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--panel)"/><circle cx="15" cy="17" r="3" fill="var(--panel)"/>',
 };
 export const icon = (name: string): string => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths[name] ?? paths.next}</svg>`;

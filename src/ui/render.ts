@@ -6,6 +6,7 @@ import { TOPIC_LABELS, facts } from '../data/facts';
 import { introPath, type IntroView } from './intro';
 import { icon } from './icons';
 import { topicPaletteAttributes } from './topic-palettes';
+import type { NoAdsView } from '../platform/purchases';
 export type Modal = 'pause' | 'collection' | 'topics' | 'settings' | 'restart' | 'hint-offer' | null;
 export interface View {
   profile: Profile; level: Level; modal: Modal; status: string; hint: string | null;
@@ -18,12 +19,31 @@ export interface View {
   storageNotice?: string | null;
   errorElapsed?: number;
   resultPending?: boolean;
+  noAds?: NoAdsView;
 }
 export const escape = (s: string): string => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const arrowSvg = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 24h28M27 13l11 11-11 11" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const stars = (count: number) => `<span class="stars" aria-label="${count} ${tr("из 3 звёзд")}">${[1, 2, 3].map(i => `<span class="${i <= count ? 'earned' : ''}">${icon('star')}</span>`).join('')}</span>`;
 const button = (action: string, label: string, cls = 'secondary', symbol?: string) => `<button class="${cls}" data-action="${action}">${symbol ? icon(symbol) : ''}<span>${label}</span></button>`;
 const detailParagraphs = (value: string) => value.split(/\n\s*\n/).map(part => `<p>${escape(part)}</p>`).join('');
+function noAdsCard(purchase?: NoAdsView): string {
+  if (!purchase) return '';
+  const owned = purchase.status === 'owned', product = purchase.product;
+  const price = product ? `<span class="purchase-price" aria-label="${escape(product.price)}">${product.currencyImage
+    ? `${escape(product.value)} <img src="${escape(product.currencyImage)}" alt="${escape(product.currency)}" width="24" height="24">`
+    : escape(product.price)}</span>` : '';
+  const buy = purchase.status === 'ready' && product ? `<button class="primary purchase-button" data-action="buy-no-ads"><span>${tr('Купить')}</span>${price}</button>` : '';
+  return `<section class="no-ads-card" aria-labelledby="no-ads-title"><div class="no-ads-heading">${icon(owned ? 'check' : 'shield')}<h3 id="no-ads-title">${owned ? tr('Реклама между уровнями отключена') : tr('Без рекламы между уровнями')}</h3></div>
+    <p>${tr('Разовая покупка. Добровольные просмотры за подсказку и ещё одну ошибку остаются доступны.')}</p>
+    <p class="purchase-status" role="status" aria-live="polite">${escape(purchase.status === 'loading' ? tr('Проверяем покупки…') : tr(purchase.message))}</p>
+    <div class="purchase-actions">${buy}${!owned ? `<button class="secondary" data-action="restore-purchases" ${purchase.status === 'loading' || purchase.status === 'purchasing' ? 'disabled' : ''}><span>${tr('Восстановить покупки')}</span></button>` : ''}</div>
+    ${!owned ? `<p class="purchase-note">${tr('Покупка восстанавливается в том же аккаунте Яндекса.')}</p>` : ''}</section>`;
+}
+function noAdsMenu(purchase?: NoAdsView): string {
+  if (purchase?.status === 'owned') return `<p class="no-ads-owned">${icon('check')}<span>${tr('Без рекламы между уровнями')}</span></p>`;
+  if (purchase?.status === 'ready') return button('settings', tr('Отключить рекламу'), 'secondary no-ads-entry', 'shield');
+  return '';
+}
 function factCard(fact: Fact, profile: Profile, large = false, detail = false): string {
   fact = localizedFact(fact);
   const category = `<div class="fact-category"><span>${icon(fact.topic)}</span>${tr(TOPIC_LABELS[fact.topic])}</div>`;
@@ -94,10 +114,10 @@ function dialogContent(v: View): string | null {
       <div class="collection-list">${shown.length ? shown.map(f => factCard(f, p, true, v.expandedFacts?.has(f.id))).join('') : `<div class="empty-collection"><span>${icon('book')}</span><h3>${p.unlocked.length ? tr('Пока ничего не найдено') : tr('Здесь начинается любопытство')}</h3><p>${p.unlocked.length ? tr('Попробуй другую тему или измени поиск.') : tr('Очисти первое поле — и твой первый факт появится здесь.')}</p></div>`}</div>${visible.length > shown.length ? `<div class="collection-more">${button('collection-more', tr('Показать ещё'), 'secondary', 'next')}<span>${shown.length} ${tr('из')} ${visible.length}</span></div>` : ''}`;
   }
   if (v.modal === 'topics') return `<div class="dialog-eyebrow">${tr("Награда после победы")}</div><h2>${tr("Что тебе интересно?")}</h2><p class="muted">${tr("Выбери одну или несколько тем. Новый случайный факт после каждой победы. Оставь хотя бы одну тему.")}</p><div class="topic-options">${topicButtons(p)}</div><p class="dialog-note">${tr("В библиотеке")} ${facts.length} ${tr("фактов и")} ${TOPICS.length} ${tr("тем. Открытые карточки сохранятся.")}</p><div class="topic-actions">${button('close', tr('Готово'), 'primary', 'check')}</div>`;
-  if (v.modal === 'settings') return `<div class="dialog-eyebrow">${tr("В твоём темпе")}</div><h2>${tr("Настройки")}</h2>${languageChoice(p)}<div class="setting"><div><strong>${tr("Звуки")}</strong><p>${tr("Короткие сигналы ходов и победы")}</p></div><button class="switch ${p.settings.sound ? 'on' : ''}" data-action="sound" role="switch" aria-checked="${p.settings.sound}" aria-label="${tr("Звуки")}"><span></span></button></div><div class="setting"><div><strong>${tr("Музыка")}</strong><p>${tr("Спокойная мелодия на фоне")}</p></div><button class="switch ${p.settings.music !== false ? 'on' : ''}" data-action="music" role="switch" aria-checked="${p.settings.music !== false}" aria-label="${tr("Музыка")}"><span></span></button></div><div class="setting"><div><strong>${tr("Меньше анимации")}</strong><p>${tr("Быстрая смена состояния без движения")}</p></div><button class="switch ${p.settings.reducedMotion ? 'on' : ''}" data-action="motion" role="switch" aria-checked="${p.settings.reducedMotion}" aria-label="${tr("Меньше анимации")}"><span></span></button></div><p class="dialog-note">${tr("Нет таймера. Нет спешки. Все уровни можно начать заново.")}</p>`;
+  if (v.modal === 'settings') return `<div class="dialog-eyebrow">${tr("В твоём темпе")}</div><h2>${tr("Настройки")}</h2>${noAdsCard(v.noAds)}${languageChoice(p)}<div class="setting"><div><strong>${tr("Звуки")}</strong><p>${tr("Короткие сигналы ходов и победы")}</p></div><button class="switch ${p.settings.sound ? 'on' : ''}" data-action="sound" role="switch" aria-checked="${p.settings.sound}" aria-label="${tr("Звуки")}"><span></span></button></div><div class="setting"><div><strong>${tr("Музыка")}</strong><p>${tr("Спокойная мелодия на фоне")}</p></div><button class="switch ${p.settings.music !== false ? 'on' : ''}" data-action="music" role="switch" aria-checked="${p.settings.music !== false}" aria-label="${tr("Музыка")}"><span></span></button></div><div class="setting"><div><strong>${tr("Меньше анимации")}</strong><p>${tr("Быстрая смена состояния без движения")}</p></div><button class="switch ${p.settings.reducedMotion ? 'on' : ''}" data-action="motion" role="switch" aria-checked="${p.settings.reducedMotion}" aria-label="${tr("Меньше анимации")}"><span></span></button></div><p class="dialog-note">${tr("Нет таймера. Нет спешки. Все уровни можно начать заново.")}</p>`;
   if (v.modal === 'hint-offer') return `<div class="result-symbol">${icon('hint')}</div><h2>${tr("Подсказки закончились")}</h2><p class="muted">${v.sdk ? tr('Посмотреть рекламу? За просмотр ты получишь одну подсказку.') : tr('За просмотр рекламы можно получить одну подсказку. Сейчас реклама недоступна. Попробуй позже.')}</p><div class="dialog-actions">${v.sdk ? button('ad-hint', tr('Посмотреть рекламу'), 'primary', 'video') : ''}${button('close', v.sdk ? tr('Не сейчас') : tr('Продолжить игру'))}</div>`;
   if (v.modal === 'restart') return `<div class="dialog-eyebrow">${tr("Начать сначала")}</div><h2>${tr("Повторить этот уровень?")}</h2><p class="muted">${tr("Поле вернётся к исходному состоянию. Ошибки восстановятся, потраченные подсказки — нет.")}</p><div class="dialog-actions">${button('restart-confirm', tr('Да, заново'), 'primary', 'restart')}${button('close', tr('Продолжить'))}</div>`;
-  if (v.modal === 'pause') return `<div class="menu-art" aria-hidden="true" style="--menu-clock:${-((v.animationClock ?? 0) % 4800) / 1000}s"><span>${arrowSvg}</span><span>${arrowSvg}</span><span>${arrowSvg}</span><span>${arrowSvg}</span></div><h2 class="menu-title">${tr("Разгадай")}<br><em>${tr("и узнай")}</em></h2><div class="pause-actions">${button('close', p.completed.length || attempt.history.length ? tr('Продолжить') : tr('Играть'), 'primary menu-play', 'next')}<div class="menu-links">${button('collection', tr('Коллекция'), 'secondary', 'book')}${button('topics', tr('Темы'), 'secondary', 'hint')}${button('settings', tr('Настройки'), 'secondary', 'settings')}</div></div>${v.saveStatus.includes(tr('не сохраняется')) || v.saveStatus.includes(tr('другой')) ? `<p class="save-warning" role="status">${escape(v.saveStatus)}</p>` : ''}`;
+  if (v.modal === 'pause') return `<div class="menu-art" aria-hidden="true" style="--menu-clock:${-((v.animationClock ?? 0) % 4800) / 1000}s"><span>${arrowSvg}</span><span>${arrowSvg}</span><span>${arrowSvg}</span><span>${arrowSvg}</span></div><h2 class="menu-title">${tr("Разгадай")}<br><em>${tr("и узнай")}</em></h2><div class="pause-actions">${button('close', p.completed.length || attempt.history.length ? tr('Продолжить') : tr('Играть'), 'primary menu-play', 'next')}<div class="menu-links">${button('collection', tr('Коллекция'), 'secondary', 'book')}${button('topics', tr('Темы'), 'secondary', 'hint')}${button('settings', tr('Настройки'), 'secondary', 'settings')}</div>${noAdsMenu(v.noAds)}</div>${v.saveStatus.includes(tr('не сохраняется')) || v.saveStatus.includes(tr('другой')) ? `<p class="save-warning" role="status">${escape(v.saveStatus)}</p>` : ''}`;
   if (v.resultPending) return null;
   if (attempt.phase === 'won') return victoryContent(p, v.level, v.detailOpen);
   if (attempt.phase === 'lost') return `<div class="result-symbol">${icon('restart')}</div><div class="dialog-eyebrow">${tr("Попробуем ещё раз")}</div><h2>${tr("Три ошибки — новый взгляд")}</h2><p class="muted">${tr("Путь перекрывался другими стрелками. Начни то же поле заново — без ожидания.")}</p><div class="pause-actions">${button('restart-confirm', tr('Попробовать снова'), 'primary', 'restart')}${v.sdk && !attempt.continued ? button('ad-continue', tr('Посмотреть рекламу: ещё одна ошибка')) : ''}${button('pause', tr('Главное меню'))}</div>`;

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Проверка покупок — Разгадай и узнай</title></head>
+<body>
+<div id="app"></div>
+<script>
+// Local browser fixture only. This entry is never included in either release build.
+(() => {
+  const key = 'arrow-qa-disable-ads';
+  const params = new URLSearchParams(location.search);
+  const english = params.get('lang') === 'en';
+  const owned = () => sessionStorage.getItem(key) === 'owned';
+  const receipt = { productID: 'disable_ads', purchaseToken: 'test-only-receipt' };
+  const payments = {
+    async getPurchases() {
+      if (params.has('offline')) throw Error('Test-only network failure');
+      return owned() ? [receipt] : [];
+    },
+    async getCatalog() {
+      if (params.has('no-product')) return [];
+      return [{ id: 'disable_ads', price: english ? '49 YAN' : '49 ЯН', priceValue: '49', priceCurrencyCode: 'YAN', getPriceCurrencyImage: () => '' }];
+    },
+    purchase() {
+      return new Promise((resolve, reject) => {
+        const dialog = document.createElement('dialog');
+        dialog.innerHTML = english
+          ? '<div class="dialog-content"><h2>Test payment</h2><p>No real money is charged.</p><div class="dialog-actions"><button class="primary" id="qa-confirm">Confirm test purchase</button><button class="secondary" id="qa-cancel">Cancel test purchase</button></div></div>'
+          : '<div class="dialog-content"><h2>Тестовая оплата</h2><p>Настоящие деньги не списываются.</p><div class="dialog-actions"><button class="primary" id="qa-confirm">Подтвердить тестовую покупку</button><button class="secondary" id="qa-cancel">Отменить тестовую покупку</button></div></div>';
+        document.body.append(dialog); dialog.showModal();
+        const finish = (confirmed) => {
+          dialog.close(); dialog.remove();
+          if (confirmed) { sessionStorage.setItem(key, 'owned'); resolve(receipt); }
+          else reject(Error('Test-only cancellation'));
+        };
+        dialog.querySelector('#qa-confirm').onclick = () => finish(true);
+        dialog.querySelector('#qa-cancel').onclick = () => finish(false);
+        dialog.addEventListener('cancel', event => { event.preventDefault(); finish(false); });
+      });
+    },
+  };
+  window.YaGames = { init: async () => ({ environment: { i18n: { lang: english ? 'en' : 'ru' } },
+    features: { LoadingAPI: { ready() {} }, GameplayAPI: { start() {}, stop() {} } }, on() {},
+    getPayments: async () => payments,
+    adv: {
+      showFullscreenAdv({ callbacks }) { callbacks.onClose(true); },
+      showRewardedVideo({ callbacks }) { callbacks.onRewarded(); callbacks.onClose(); },
+    },
+  }) };
+})();
+</script>
+<script type="module" src="/src/main.ts"></script>
+</body></html>
