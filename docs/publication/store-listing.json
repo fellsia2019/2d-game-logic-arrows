@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "platforms": ["desktop", "android", "ios"],
+  "orientation": "any",
+  "languages": ["ru", "en"],
+  "cloudSaves": true,
+  "suggestedAgeRating": "6+",
+  "categories": ["Головоломки", "Обучающие"],
+  "ru": {
+    "title": "Разгадай и узнай",
+    "seo": "Головоломки со стрелками и коллекция любопытных фактов. Найди свободный путь, продумай порядок ходов и открой что-нибудь новое!",
+    "short": "Освобождай стрелки и собирай любопытные факты",
+    "about": "Разгадывай короткие головоломки со стрелками и узнавай новое после победы. Убирай стрелки со свободным путём к краю, а на связанных уровнях продумывай порядок поворотов. Бесконечная персональная кампания постепенно знакомит с механиками и усложняет поля. В коллекции — 604 факта по восьми темам: космос, природа, технологии, искусство, история, география, наука и человек. Выбирай интересные темы, читай объяснения и сохраняй любимые карточки в избранное. Играй без таймера, меняй язык, музыку и анимацию в настройках. Реклама за подсказку или дополнительную ошибку добровольная. Покупка «Без рекламы между уровнями» отключает межуровневые показы.",
+    "howToPlay": "Нажми на стрелку, перед которой свободен путь до края поля: она уйдёт. Убери все стрелки, чтобы открыть факт и следующий уровень. Стрелка со знаком поворота разворачивает связанную стрелку на 90° по часовой стрелке. Продумай порядок; на связанных уровнях кнопка «Отменить ход» возвращает успешные ходы и повороты. Нажатие на заблокированную стрелку расходует ошибку. После трёх ошибок можно сразу начать то же поле заново. Подсказка показывает безопасный ход; если запас закончился, можно добровольно посмотреть рекламу за ещё одну. Управление — мышь или касание. Клавиши со стрелками перемещают фокус между стрелками, Enter или пробел выполняют ход. Кнопка меню ставит игру на паузу и открывает коллекцию, темы и настройки.",
+    "keywords": "стрелки, головоломка, логика, факты, коллекция, знания",
+    "productTitle": "Без рекламы между уровнями",
+    "productDescription": "Навсегда отключает рекламу между уровнями. Добровольные просмотры за подсказку и дополнительную ошибку остаются доступны."
+  },
+  "en": {
+    "title": "Solve & Discover",
+    "seo": "Arrow puzzles with a collection of fascinating facts. Find a clear path, plan the order of your moves, and discover something new after every win!",
+    "short": "Clear arrow puzzles and collect fascinating facts",
+    "about": "Solve short arrow puzzles and discover something new after each win. Remove arrows with a clear path to the edge, and plan rotations on levels with linked arrows. An endless personal campaign introduces the mechanics gradually and grows more challenging. Collect 604 facts across eight topics: space, nature, technology, art, history, geography, science, and people. Choose your favorite topics, read explanations, and save cards to your favorites. Play without a timer and adjust the language, music, and motion in Settings. Ads for a hint or an extra mistake are optional. The one-time No ads between levels purchase removes ads between levels.",
+    "howToPlay": "Tap an arrow with a clear path to the edge of the board to remove it. Clear all arrows to unlock a fact and the next level. An arrow with a rotation mark turns its linked arrow 90° clockwise. Plan the order of your moves; on linked levels, Undo restores successful moves and their rotations. Tapping a blocked arrow uses one mistake. After three mistakes, you can immediately restart the same board. A hint shows a safe move; when your hints run out, you can choose to watch an ad for one more. Use a mouse or touch. The arrow keys move focus between arrows; Enter or Space makes a move. The menu button pauses play and opens your collection, topics, and settings.",
+    "keywords": "arrows, puzzle, logic, facts, collection, knowledge",
+    "productTitle": "No ads between levels",
+    "productDescription": "Permanently removes ads between levels. Optional ads for hints and an extra mistake remain available."
+  },
+  "moderatorComment": "Игра доступна на ru/en, язык автоматически определяется через SDK. Кампания бесконечная; первые уровни обучают управлению и связям. Прогресс сохраняется сразу на устройстве и синхронизируется через player.setData(data, true). Платформенная пауза, реклама и оплата останавливают ввод и звук. Межуровневая реклама вызывается только по переходу после победы, с ограничением частоты. Rewarded добровольный, основная игра доступна без просмотра. disable_ads — постоянный товар: отключает межуровневую рекламу и восстанавливается через getPurchases без consumePurchase. Цена и валюта берутся из SDK. В архиве нет панели разработки и тестовых страниц."
+}

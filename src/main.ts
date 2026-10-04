@@ -9,7 +9,7 @@ import { finish, grantReward, toggleTopic } from './core/profile';
 import { ProfileStorage, SAVE_KEY } from './platform/save';
 import { PauseReasons, YandexAdapter } from './platform/yandex';
 import { Sound } from './audio/sound';
-import { render, type Modal } from './ui/render';
+import { escape, render, type Modal } from './ui/render';
 import type { Solution } from './solver/solve';
 import { introArrow, type IntroView } from './ui/intro';
 import { FEEDBACK_DURATION_MS } from './ui/feedback';
@@ -17,6 +17,7 @@ import { LoadingScreen } from './ui/LoadingScreen';
 import { interstitialDue } from './platform/ad-policy';
 import { toggleFactReading } from './ui/fact-reading';
 import { clearDepartures, playDeparture } from './ui/departures';
+import { CloudProgress } from './platform/cloud';
 
 initializeLocalLocale();
 
@@ -30,11 +31,7 @@ const saves = new ProfileStorage(storage);
 let profile = saves.load();
 setLanguagePreference(profile.settings.language ?? 'auto');
 loader.stage(t('Готовим головоломки…'), 35);
-const campaignStart = initializeCampaign(profile);
-const campaign = new Campaign(campaignStart.seed);
-if (!profile.attempt) profile.attempt = newAttempt(campaign.get(campaignStart.order));
-if (profile.attempt.phase === 'won') profile = finish(profile, levelById(profile.attempt.levelId), facts);
-profile = saves.save(profile);
+let campaign: Campaign;
 document.body.classList.toggle('reduced-motion', profile.settings.reducedMotion);
 const pauseReasons = new PauseReasons(), sound = new Sound();
 let intro: IntroView | null = null, introFrame = 0, introStamp = 0, introAttemptId = '';
@@ -66,13 +63,22 @@ function activity(): void {
 }
 const sdk = new YandexAdapter((value, source) => {
   recordTime(); pauseReasons.set(source, value); activity(); draw();
-}, undefined, () => draw());
+}, undefined, () => draw(), open => {
+  cloud.stop(); otherTab = true;
+  pauseReasons.set('platform', true); activity();
+  if (!open) window.location.reload();
+});
+const cloud = new CloudProgress(() => sdk.getPlayer(), storage, () => {
+  // Avoid rebuilding a dialog on every cloud status update (which would lose scroll/focus).
+  app.querySelectorAll<HTMLElement>('.save-status').forEach(node => { node.textContent = saveLabel(); });
+}, () => sdk.serverTime());
 const worker = new Worker(new URL('./solver/worker.ts', import.meta.url), { type: 'module' });
 let requestId = 0;
 let pendingHint: { id: number; attemptId: string; revision: number; timer: number } | null = null;
 function protectChangedSave(): void {
   if (saves.status !== 'cleared' && saves.status !== 'conflict') return;
   otherTab = true;
+  cloud.stop();
   storageNotice = saves.status === 'cleared'
     ? t('Сохранение удалено. Обнови страницу, чтобы начать с первого уровня.')
     : t('Прогресс изменён в другой вкладке. Обнови страницу, чтобы загрузить актуальное сохранение.');
@@ -88,13 +94,35 @@ function verifySave(): boolean {
 function commit(next = profile): void {
   if (otherTab) return;
   profile = saves.save(next); protectChangedSave();
+  if (!otherTab && saves.status !== 'future') cloud.schedule(profile);
 }
 function saveLabel(): string {
   if (storageNotice) return storageNotice;
   if (otherTab) return t('В другой вкладке появился новый прогресс');
+  if (cloud.status === 'saved' && (saves.status === 'saved' || saves.status === 'memory')) return t('Прогресс сохранён в Яндексе');
+  if (saves.status === 'saved') {
+    if (cloud.status === 'pending') return t('Сохраняем прогресс в Яндексе…');
+    if (cloud.status === 'error') return t('Прогресс на устройстве. Синхронизация недоступна.');
+    if (cloud.status === 'protected') return t('Облачное сохранение защищено. Прогресс на устройстве.');
+    if (cloud.status === 'too-large') return t('Облако заполнено. Прогресс сохраняется на устройстве.');
+  }
   return { saved: t('Прогресс сохранён на устройстве'), memory: t('Прогресс сейчас не сохраняется'),
     recovered: t('Восстановлено резервное сохранение'), future: t('Сохранение другой версии защищено'),
     cleared: t('Сохранение удалено'), conflict: t('Прогресс изменён в другой вкладке') }[saves.status];
+}
+function chooseCloudProfile(): Promise<Profile> {
+  const conflict = cloud.conflict!;
+  const summary = (p: Profile) => `${t('Уровень')} ${p.attempt ? levelById(p.attempt.levelId).order : initializeCampaign(p).order} · ${p.unlocked.length} ${t('карточек')}`;
+  return new Promise(resolve => {
+    app.innerHTML = `<dialog id="cloud-choice" aria-labelledby="cloud-choice-title"><div class="dialog-content"><h2 id="cloud-choice-title">${t('Выбери сохранение')}</h2><p class="muted">${t('На устройстве и в Яндексе есть разные изменения. Какую версию продолжить?')}</p><div class="pause-actions"><button class="primary" data-cloud-choice="local"><span>${t('На этом устройстве')}<br>${escape(summary(conflict.local))}</span></button><button class="secondary" data-cloud-choice="remote"><span>${t('В Яндексе')}<br>${escape(summary(conflict.remote))}</span></button></div></div></dialog>`;
+    const dialog = app.querySelector<HTMLDialogElement>('dialog')!; dialog.showModal();
+    dialog.addEventListener('cancel', event => event.preventDefault());
+    dialog.querySelectorAll<HTMLButtonElement>('[data-cloud-choice]').forEach(button => button.addEventListener('click', () => {
+      if (!verifySave()) { window.location.reload(); return; }
+      const selected = cloud.choose(button.dataset.cloudChoice as 'local' | 'remote');
+      dialog.close(); dialog.remove(); resolve(selected);
+    }, { once: true }));
+  });
 }
 function focusKey(): string | null {
   const el = document.activeElement as HTMLElement | null;
@@ -321,6 +349,7 @@ app.addEventListener('click', event => {
   event.preventDefault(); sound.unlock();
   if (target.dataset.action === 'reload') { window.location.reload(); return; }
   if (!verifySave()) return;
+  if (['play', 'close', 'next', 'restart-confirm'].includes(target.dataset.action ?? '')) sdk.requestMobileFullscreen();
   if (target.dataset.action === 'skip-intro') { if (intro && !otherTab && !pauseReasons.has('platform')) endIntro(); return; }
   if (intro) return;
   if (target.dataset.arrow) { performMove(target.dataset.arrow); return; }
@@ -411,13 +440,31 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('blur', () => { recordTime(); pauseReasons.set('focus', true); commit(); activity(); });
 window.addEventListener('focus', () => { clockStamp = performance.now(); pauseReasons.set('focus', false); verifySave(); activity(); if (!modal) maybeIntro(); });
-window.addEventListener('pagehide', () => { recordTime(); if (!otherTab) commit(); });
+window.addEventListener('pagehide', () => { recordTime(); if (!otherTab) commit(); cloud.flush(); });
+app.addEventListener('contextmenu', event => {
+  if ((event.target as Element).closest('.board-frame')) event.preventDefault();
+});
 window.addEventListener('storage', event => {
   if (event.storageArea === storage && (event.key === SAVE_KEY || event.key === null)) verifySave();
 });
 setInterval(recordTime, 1000);
 loader.stage(import.meta.env.MODE === 'yandex' ? t('Подключаем игровую платформу…') : t('Готовим игру…'), 70);
-void Promise.all([sdk.initialize(), campaign.prepare(campaignStart.order)]).then(() => loader.finish(() => {
+void (async () => {
+  await sdk.initialize();
+  if (sdk.cloudSupported && saves.status !== 'future') {
+    loader.stage(t('Загружаем сохранение…'), 78);
+    let restored = await cloud.load(profile);
+    if (!verifySave()) return;
+    if (cloud.conflict) restored = await chooseCloudProfile();
+    profile = restored; setLanguagePreference(profile.settings.language ?? 'auto');
+  }
+  const campaignStart = initializeCampaign(profile);
+  campaign = new Campaign(campaignStart.seed);
+  if (!profile.attempt) profile.attempt = newAttempt(campaign.get(campaignStart.order));
+  if (profile.attempt.phase === 'won') profile = finish(profile, levelById(profile.attempt.levelId), facts);
+  commit();
+  await campaign.prepare(campaignStart.order);
+  loader.finish(() => {
   booting = false; draw(); sdk.markReady();
   if (import.meta.env.MODE !== 'yandex') {
     void import('./ui/debug').then(({ mountDebugPanel }) => {
@@ -440,7 +487,8 @@ void Promise.all([sdk.initialize(), campaign.prepare(campaignStart.order)]).then
       });
     });
   }
-}));
+  });
+})();
 
 // Developer inspection is limited to a read-only snapshot and is excluded from Yandex builds.
 if (import.meta.env.DEV) {

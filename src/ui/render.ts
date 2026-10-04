@@ -27,7 +27,7 @@ const stars = (count: number) => `<span class="stars" aria-label="${count} ${tr(
 const button = (action: string, label: string, cls = 'secondary', symbol?: string) => `<button class="${cls}" data-action="${action}">${symbol ? icon(symbol) : ''}<span>${label}</span></button>`;
 const detailParagraphs = (value: string) => value.split(/\n\s*\n/).map(part => `<p>${escape(part)}</p>`).join('');
 function noAdsCard(purchase?: NoAdsView): string {
-  if (!purchase) return '';
+  if (!purchase || purchase.status === 'unavailable') return '';
   const owned = purchase.status === 'owned', product = purchase.product;
   const price = product ? `<span class="purchase-price" aria-label="${escape(product.price)}">${product.currencyImage
     ? `${escape(product.value)} <img src="${escape(product.currencyImage)}" alt="${escape(product.currency)}" width="24" height="24">`
@@ -127,11 +127,12 @@ function dialogContent(v: View): string | null {
 export function render(v: View): string {
   const p = v.profile, attempt = p.attempt!;
   const dialog = v.storageNotice ? null : dialogContent(v);
+  const saveStatus = v.modal === 'settings' ? `<p class="save-status muted" role="status">${escape(v.saveStatus)}</p>` : '';
   const hasBack = v.modal === 'collection' || v.modal === 'topics' || v.modal === 'settings';
   const dialogClass = [v.modal === 'pause' ? 'main-menu' : v.modal === 'collection' ? 'collection-dialog' : !v.modal && attempt.phase === 'won' ? 'victory-dialog' : '', hasBack ? 'has-back' : '',
     (v.modal === 'collection' && v.expandedFacts?.size || !v.modal && attempt.phase === 'won' && v.detailOpen) ? 'reading-mode' : ''].filter(Boolean).join(' ');
   const dialogNavigation = hasBack ? `<nav class="dialog-nav" aria-label="${tr("Навигация по меню")}">${button('close', tr('Назад'), 'secondary dialog-back', 'back')}<button class="close-dialog icon-button" data-action="close" aria-label="${tr("Вернуться в меню")}">${icon('close')}</button></nav>` : v.modal && v.modal !== 'pause' ? `<button class="close-dialog icon-button" data-action="close" aria-label="${tr("Закрыть")}">${icon('close')}</button>` : '';
-  return `<main class="game-stage ${v.intro ? `intro-active intro-${v.intro.phase}` : ''}" ${v.storageNotice ? 'inert' : ''}><section class="play-area" aria-labelledby="level-title">
+  return `<main class="game-stage ${v.level.links.length ? 'linked-field' : ''} ${v.intro ? `intro-active intro-${v.intro.phase}` : ''}" ${v.storageNotice ? 'inert' : ''}><section class="play-area" aria-labelledby="level-title">
     <div class="play-head"><button class="icon-button" data-action="pause" aria-label="${tr("Главное меню")}">${icon('menu')}</button><h1 id="level-title">${tr("Уровень")} ${v.level.order}</h1><div class="mistakes" aria-label="${tr("Допустимых ошибок осталось:")} ${3 - attempt.mistakesUsed}">${[0, 1, 2].map(i => `<span class="${i < attempt.mistakesUsed ? 'spent' : ''}" aria-hidden="true">${icon('heart')}</span>`).join('')}</div></div>
     <div class="board-frame">${board(v)}</div>
     ${v.level.order === 1 ? '<div class="game-feedback">' : ''}<p class="game-status" role="status" aria-live="polite">${escape(v.intro ? '' : v.status || (v.level.teaching && v.level.order !== 1 ? tr(v.level.tutorial ?? '') : ''))}</p>${v.level.order === 1 ? `${button('how-play', tr('Как играть'), 'how-play', 'help')}</div>` : ''}
@@ -139,6 +140,6 @@ export function render(v: View): string {
     ${v.saveStatus.includes(tr('не сохраняется')) ? `<p class="save-warning" role="status">${escape(v.saveStatus)}</p>` : ''}
     </section></main>
     ${v.intro ? `<div class="intro-scrim" aria-hidden="true"></div><button class="intro-skip" data-action="skip-intro">${tr("Пропустить")}</button>` : ''}
-    ${dialog ? `<dialog id="game-dialog" class="${dialogClass}" aria-labelledby="dialog-title">${dialogNavigation}<div class="dialog-content">${dialog}</div></dialog>` : ''}
+    ${dialog ? `<dialog id="game-dialog" class="${dialogClass}" aria-labelledby="dialog-title">${dialogNavigation}<div class="dialog-content">${dialog}${saveStatus}</div></dialog>` : ''}
     ${v.storageNotice ? `<div class="external-pause" role="status"><div class="storage-notice"><p>${escape(v.storageNotice)}</p>${button('reload', tr('Обновить страницу'), 'primary', 'restart')}</div></div>` : v.externalPause ? `<div class="external-pause" role="status"><span>${tr("Игра на паузе")}</span></div>` : ''}`;
 }

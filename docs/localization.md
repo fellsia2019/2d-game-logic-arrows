@@ -20,7 +20,7 @@
 
 Выбор `auto`, `ru` или `en` хранится в существующем профиле. Старые профили без поля языка считаются автоматическими. При ручном выборе интерфейс, факты и доступные подписи переключаются сразу, без перезапуска уровня. При следующем старте SDK всё равно читается; сохранённый ручной выбор остаётся активным. Возврат к «Автоматически» сразу применяет уже определённый язык SDK или браузера. Перед проверкой автоопределения через SDK mocks нужно начать с нового профиля или вернуть настройку в «Автоматически».
 
-`ui.en.ts` содержит английские переводы интерфейса. `facts.en.ts` содержит ровно 160 записей по существующим ID; `facts.ts` собирает представление карточки, сохраняя тему, URL источника и дату проверки оригинального каталога. Перевод не означает новую проверку первоисточников. Числа и оговорки русских карточек сохранены. Внешняя загрузка переводов и сервисы машинного перевода во время игры не используются.
+`ui.en.ts` содержит английские переводы интерфейса. `facts.en.ts` содержит переводы исходных 160 карточек; остальные двуязычные партии доводят полный каталог до 604 фактов; `facts.ts` собирает представление карточки, сохраняя тему, URL источника и дату проверки оригинального каталога. Перевод не означает новую проверку первоисточников. Числа и оговорки русских карточек сохранены. Внешняя загрузка переводов и сервисы машинного перевода во время игры не используются.
 
 Локализованы все игровые окна, уведомления, подсказки, обучение, рекламные предложения, подписи доступности, объяснения и атрибуция карточек. Коллекция ищет по текстам выбранного языка. В dev также переведены панель проверки и галерея. Русские исходные данные генератора и прежнего каталога сохранены; они переводятся при отображении. Русский геймдок, протокол QA, комментарии и сообщения внутренних исключений остаются материалами разработки.
 
@@ -32,19 +32,19 @@
 
 **About the game**
 
-Clear arrow puzzles and discover fascinating facts. Tap arrows with a clear path to the edge. Some arrows rotate linked arrows, so the order of your moves matters. Solve an endless series of short puzzles and collect 160 facts across eight topics, from space and nature to history and science. Choose your favorite topics, save facts to your favorites, and play at your own pace.
+Clear arrow puzzles and discover fascinating facts. Tap arrows with a clear path to the edge. Some arrows rotate linked arrows, so the order of your moves matters. Solve an endless series of short puzzles and collect 604 facts across eight topics, from space and nature to history and science. Choose your favorite topics, save facts to your favorites, and play at your own pace.
 
 **How to play**
 
 Tap an arrow with a clear path to the edge of the board to remove it. An arrow with a rotation mark turns its linked arrow 90° clockwise when removed. Clear all arrows to win. Tapping a blocked arrow uses one mistake; after three mistakes, you can restart for free. On levels with linked arrows, Undo restores successful moves and their rotations. Use hints to find a safe move. When your hints run out, you can choose to watch an ad for one more hint. Use a mouse or touch; use the arrow keys to move focus between arrows and Enter or Space to activate one.
 
-Скриншоты и промоматериалы английского черновика следует сделать из English-версии выпускной сборки. Русские тексты в них не использовать. Облачное сохранение и новые факты сверх каталога не обещать.
+Скриншоты и промоматериалы английского черновика следует сделать из English-версии выпускной сборки. Русские тексты в них не использовать. Новые факты сверх текущего каталога не обещать. Облачный профиль подключён; перенос между устройствами ещё требует платформенной проверки. Готовые тексты и изображения — в [publication/store-listing.md](publication/store-listing.md) и [publication/media/](publication/media/).
 
 ## Приёмка
 
-Автоматические проверки: выбор и резервные языки, все UI-ключи, отсутствие строк интерфейса без вызова переводчика, все 160 фактов, старые учебные тексты, английские игровые экраны и доступные подписи (исключение — самоназвание `Русский` в списке выбора), поиск по English, экранирование пользовательского поиска, старые профили без языкового поля, сохранение ручного выбора и возврат к SDK-языку, применение SDK-языка до Game Ready. Актуальные результаты — в протоколе QA.
+Автоматические проверки: выбор и резервные языки, все UI-ключи, отсутствие строк интерфейса без вызова переводчика, все 604 факта, старые учебные тексты, английские игровые экраны и доступные подписи (исключение — самоназвание `Русский` в списке выбора), поиск по English, экранирование пользовательского поиска, старые профили без языкового поля, сохранение ручного выбора и возврат к SDK-языку, применение SDK-языка до Game Ready. Актуальные результаты — в протоколе QA.
 
-Локальная визуальная проверка и её фактические результаты записаны в `docs/qa/vertical-slice.md`.
+Локальная визуальная проверка первого выпуска записана в [qa/yandex-publication.md](qa/yandex-publication.md); предыдущие проверки — в `docs/qa/vertical-slice.md`.
 
 Перед отправкой на модерацию:
 

@@ -150,6 +150,23 @@ function mockSdk() {
   return { sdk, callbacks, events };
 }
 describe('platform lifecycle', () => {
+  it('requests mobile fullscreen only from an explicit game action and tolerates denial', async () => {
+    const { sdk } = mockSdk();
+    sdk.deviceInfo = { type: 'mobile' };
+    sdk.screen = { fullscreen: { status: 'off', request: vi.fn(async () => { throw Error('denied'); }) } };
+    const adapter = new YandexAdapter(() => {}, async () => sdk); await adapter.initialize();
+    expect(sdk.screen.fullscreen.request).not.toHaveBeenCalled();
+    adapter.requestMobileFullscreen(); await Promise.resolve(); expect(sdk.screen.fullscreen.request).toHaveBeenCalledOnce();
+    sdk.screen.fullscreen.status = 'on'; adapter.requestMobileFullscreen(); expect(sdk.screen.fullscreen.request).toHaveBeenCalledOnce();
+    sdk.screen.fullscreen.status = 'off'; sdk.deviceInfo.type = 'desktop'; adapter.requestMobileFullscreen();
+    expect(sdk.screen.fullscreen.request).toHaveBeenCalledOnce();
+  });
+  it('signals account selection so the controller can stop old-account uploads and reload', async () => {
+    const { sdk, events } = mockSdk(), changed = vi.fn();
+    sdk.EVENTS = { ACCOUNT_SELECTION_DIALOG_OPENED: 'account-open', ACCOUNT_SELECTION_DIALOG_CLOSED: 'account-close' };
+    const adapter = new YandexAdapter(() => {}, async () => sdk, () => {}, changed); await adapter.initialize();
+    events['account-open'](); events['account-close'](); expect(changed.mock.calls).toEqual([[true], [false]]);
+  });
   it('bounds a hanging SDK and ignores a provider that resolves after the timeout', async () => {
     vi.useFakeTimers();
     try {

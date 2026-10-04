@@ -4,7 +4,8 @@ $buildPath = Join-Path $workspacePath 'dist-yandex'
 if (!(Test-Path -LiteralPath (Join-Path $buildPath 'index.html'))) { throw 'Run build:yandex first' }
 $artifactPath = Join-Path $workspacePath 'artifacts'
 New-Item -ItemType Directory -Path $artifactPath -Force | Out-Null
-$zipPath = Join-Path $artifactPath 'osvobodi-pole-slice-yandex.zip'
+$releaseVersion = (Get-Content -LiteralPath (Join-Path $workspacePath 'package.json') -Raw | ConvertFrom-Json).version
+$zipPath = Join-Path $artifactPath "solve-and-discover-yandex-$releaseVersion.zip"
 Add-Type -AssemblyName System.IO.Compression
 $zipStream = [System.IO.File]::Open($zipPath, [System.IO.FileMode]::Create)
 $archive = [System.IO.Compression.ZipArchive]::new($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)

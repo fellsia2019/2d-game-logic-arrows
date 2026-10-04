@@ -11,6 +11,29 @@
   const english = params.get('lang') === 'en';
   const owned = () => sessionStorage.getItem(key) === 'owned';
   const receipt = { productID: 'disable_ads', purchaseToken: 'test-only-receipt' };
+  const cloudKey = 'arrow-qa-cloud-' + (params.get('owner') || 'player-a');
+  const cloudPlayer = {
+    getUniqueID: () => params.get('owner') || 'player-a',
+    async getData() {
+      if (params.has('cloud-offline')) throw Error('Test-only cloud failure');
+      return JSON.parse(localStorage.getItem(cloudKey) || '{}');
+    },
+    async setData(data) {
+      if (params.has('cloud-offline')) throw Error('Test-only cloud failure');
+      localStorage.setItem(cloudKey, JSON.stringify(data));
+    },
+  };
+  if (params.has('cloud')) {
+    const reset = document.createElement('button');
+    reset.textContent = english ? 'Test: reload from cloud' : 'Тест: загрузить из облака';
+    reset.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:9999;padding:6px';
+    reset.onclick = () => {
+      localStorage.removeItem('osvobodi-pole-profile-v1');
+      localStorage.removeItem('osvobodi-pole-profile-v1-backup');
+      location.reload();
+    };
+    document.body.append(reset);
+  }
   const payments = {
     async getPurchases() {
       if (params.has('offline')) throw Error('Test-only network failure');
@@ -41,6 +64,7 @@
   window.YaGames = { init: async () => ({ environment: { i18n: { lang: english ? 'en' : 'ru' } },
     features: { LoadingAPI: { ready() {} }, GameplayAPI: { start() {}, stop() {} } }, on() {},
     getPayments: async () => payments,
+    ...(params.has('cloud') ? { getPlayer: async () => cloudPlayer } : {}),
     adv: {
       showFullscreenAdv({ callbacks }) { callbacks.onClose(true); },
       showRewardedVideo({ callbacks }) { callbacks.onRewarded(); callbacks.onClose(); },

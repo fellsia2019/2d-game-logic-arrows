@@ -1,11 +1,17 @@
 import { portalLocale, setAutomaticLocale } from '../i18n';
 import { NoAdsPurchases, type Payments } from './purchases';
+import type { CloudPlayer } from './cloud';
 
 export interface Sdk {
   environment: { i18n: { lang: string } };
   features: { LoadingAPI?: { ready(): void }; GameplayAPI?: { start(): void; stop(): void } };
-  on(event: 'game_api_pause' | 'game_api_resume', callback: () => void): void;
+  on(event: string, callback: () => void): void;
   getPayments?(options: { signed: false }): Promise<Payments>;
+  getPlayer?(): Promise<CloudPlayer>;
+  serverTime?(): number;
+  deviceInfo?: { type: string };
+  screen?: { fullscreen: { status: string; request(): Promise<void> } };
+  EVENTS?: { ACCOUNT_SELECTION_DIALOG_OPENED: string; ACCOUNT_SELECTION_DIALOG_CLOSED: string };
   adv: {
     showRewardedVideo(options: { callbacks: { onOpen(): void; onRewarded(): void; onClose(): void; onError(): void } }): void;
     showFullscreenAdv(options: { callbacks: { onOpen(): void; onClose(shown: boolean): void; onError(): void } }): void;
@@ -35,13 +41,24 @@ export class YandexAdapter {
   readonly purchases: NoAdsPurchases;
   language = 'ru';
   constructor(private pause: (paused: boolean, source: 'platform' | 'advertisement' | 'purchase') => void,
-    private provider: () => Promise<Sdk> = loadSdk, purchasesChanged: () => void = () => {}) {
+    private provider: () => Promise<Sdk> = loadSdk, purchasesChanged: () => void = () => {},
+    private accountChanged: (open: boolean) => void = () => {}) {
     this.purchases = new NoAdsPurchases(() => {
       if (!this.sdk?.getPayments) return Promise.reject(new Error('Payments unavailable'));
       return this.sdk.getPayments({ signed: false });
     }, purchasesChanged);
   }
   get available(): boolean { return !!this.sdk; }
+  get cloudSupported(): boolean { return !!this.sdk?.getPlayer; }
+  getPlayer(): Promise<CloudPlayer> {
+    return this.sdk?.getPlayer?.() ?? Promise.reject(Error('Cloud unavailable'));
+  }
+  serverTime(): number { return this.sdk?.serverTime?.() ?? Date.now(); }
+  requestMobileFullscreen(): void {
+    const sdk = this.sdk;
+    if (!sdk || !['mobile', 'tablet'].includes(sdk.deviceInfo?.type ?? '') || sdk.screen?.fullscreen.status === 'on') return;
+    try { void sdk.screen?.fullscreen.request().catch(() => {}); } catch { /* browser may deny fullscreen */ }
+  }
   get purchasesSupported(): boolean { return !!this.sdk?.getPayments; }
   get interstitialAvailable(): boolean {
     return this.available && (!this.purchasesSupported || this.purchases.canShowInterstitial);
@@ -54,6 +71,10 @@ export class YandexAdapter {
       })]); this.language = this.sdk.environment.i18n.lang; setAutomaticLocale(portalLocale(this.language));
       this.sdk.on('game_api_pause', () => this.pause(true, 'platform'));
       this.sdk.on('game_api_resume', () => this.pause(false, 'platform'));
+      if (this.sdk.EVENTS) {
+        this.sdk.on(this.sdk.EVENTS.ACCOUNT_SELECTION_DIALOG_OPENED, () => this.accountChanged(true));
+        this.sdk.on(this.sdk.EVENTS.ACCOUNT_SELECTION_DIALOG_CLOSED, () => this.accountChanged(false));
+      }
       this.sync();
       // Purchase discovery must not hold Game Ready or a playable screen hostage to the network.
       if (this.purchasesSupported) void this.purchases.refresh();
